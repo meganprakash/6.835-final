@@ -1,0 +1,7 @@
+{
+  "name": "TakeUpSpace",
+  "version": "1.0.0",
+  "dependencies": {
+    "pixi.js": "^6.0.2"
+  }
+}
