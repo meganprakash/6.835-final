@@ -210,7 +210,6 @@ function gamePhase() {
     let e = new CustomEvent("timesUp", {
         bubbles: true,
     });
-    timer = setTimeout(endGame, 120000)
     document.getElementById("instructions").onclick = () => {clearTimeout(timer); endGame()}
 
     document.addEventListener("newPose", drawCursor)
@@ -253,9 +252,8 @@ function drawCursor() {
 
 function drawChallenge() {
     if (score === 15) {endGame()}
-    xCh = Math.random() * (canvasWidth - 200) + 100
+    xCh = Math.min(Math.random() * (canvasWidth - 200) + 100, 300)
     yCh = Math.random() * (canvasHeight - 140) + 70
-    if (yCh < 250) { xCh = Math.min(xCh, 300)}
     let v = Math.max(0.5, Math.random())
     if (yCh > 450) { v = Math.min(v, 0.7)}
 
