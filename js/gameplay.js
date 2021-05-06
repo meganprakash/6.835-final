@@ -20,7 +20,7 @@ let canvas,
     challengeVolCursor,
     challengeText,
     canvasWidth = 1000,
-    canvasHeight = 800
+    canvasHeight = 700
 
 let micRatio = 0,
     posX = 0,
@@ -84,7 +84,7 @@ function calibrationPhaseNear() {
     showInstruction("Welcome! This is the calibration phase. Please stand " +
         "3 feet away from your computer, and say 'Hi! My name is [your name]'")
 
-    waitingMic = 500
+    waitingMic = 400
     waitingPos = 60
     let widthHistory = []
     let maxMic = -Infinity
@@ -170,22 +170,11 @@ function endCalibration() {
 
 function gameIntro() {
     showInstruction("The cursor onscreen shows your position and volume." +
-        "<br> To complete the challenges, walk so your cursor matches the prompt, then speak the given word loudly" +
-        " enough to match the volume circle." +
-        "<p> See how many you can get in 1 minute! </p>" +
-        "Click here to stop at any time.")
+        "<br> To play: walk so your cursor matches the prompt, then speak the given word loudly!" +
+        "Click to begin and to stop at any time.")
 
-    var t = fabric.Text("Starting in 3... ", {fontSize: 40, left: "center", top: "center"})
+    document.onclick = gamePhase
 
-    setTimeout(() => {
-        t.set('text', "Starting in 2..."); canvas.renderAll()
-    }, 2000)
-
-    setTimeout(() => {
-        t.set('text', "Starting in 1..."); canvas.renderAll()
-    }, 1000)
-
-    setTimeout(gamePhase, 1000)
 }
 
 function gamePhase() {
@@ -249,9 +238,9 @@ function drawCursor() {
 }
 
 function drawChallenge() {
-    xCh = Math.random() * (canvasWidth - 40) + 20
-    yCh = Math.random() * (canvasHeight - 40) + 20
-    let v = Math.max(0.5, Math.random() + 0.3)
+    xCh = Math.random() * (canvasWidth - 200) + 100
+    yCh = Math.random() * (canvasHeight - 140) + 70
+    let v = Math.max(0.5, Math.random() + 0.2)
 
     const randomWord = words[Math.floor(Math.random() * words.length)];
 
@@ -271,7 +260,7 @@ function drawChallenge() {
 function checkChallenge() {
     if(currentChallenge) {
         // see if posCursor intersects challengePosCursor
-        if(Math.abs(xPos - xCh) < 20 && Math.abs(yPos - yCh) < 20){
+        if(Math.abs(xPos - xCh) < 40 && Math.abs(yPos - yCh) < 40){
             currentPosChallenge = false
             challengePosCursor.opacity = 0
         }
@@ -279,7 +268,7 @@ function checkChallenge() {
         if(currentPosChallenge === false) {
             let x = canvasWidth - distanceFromLeft() * canvasWidth
             let y = canvasHeight - distanceFromFront() * canvasHeight
-            challengeVolCursor.set({left: x, top: y, radius: (20 + 10*currentVolChallenge)})
+            challengeVolCursor.set({left: x, top: y, radius: (30 + 30*currentVolChallenge)})
 
             if(Math.abs(getVolPct() - currentVolChallenge) < 0.1) {
                 currentVolChallenge = Infinity
