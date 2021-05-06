@@ -277,7 +277,7 @@ function drawChallenge() {
 function checkChallenge() {
     if(currentChallenge) {
         // see if posCursor intersects challengePosCursor
-        if(Math.abs(xPos - xCh) < 40 && Math.abs(yPos - yCh) < 40){
+        if(Math.abs(xPos - xCh) < 50 && Math.abs(yPos - yCh) < 50){
             currentPosChallenge = false
             challengePosCursor.opacity = 0
         }
@@ -307,6 +307,7 @@ function endGame() {
 
     // get seconds
     var seconds = Math.round(timeDiff);
+    canvas.clear()
 
     document.removeEventListener("newPose", drawCursor)
     document.removeEventListener("newSound", checkChallenge)
