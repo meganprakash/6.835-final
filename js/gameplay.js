@@ -19,8 +19,8 @@ let canvas,
     challengePosCursor,
     challengeVolCursor,
     challengeText,
-    canvasWidth = 1000,
-    canvasHeight = 700
+    canvasWidth = 900,
+    canvasHeight = 800
 
 let micRatio = 0,
     posX = 0,
@@ -45,6 +45,8 @@ let canvas_d = document.getElementById("game-canvas")
 
 let timer,
     gameRunning = false
+
+let startTime
 
 let words = ["amazement","attention","banana", "blindingly", "conference", "electric",
     "glacier", "horizon", "instrument", "numerous", "photograph", "typical"]
@@ -84,7 +86,7 @@ function calibrationPhaseNear() {
     showInstruction("Welcome! This is the calibration phase. Please stand " +
         "3 feet away from your computer, and say 'Hi! My name is [your name]'")
 
-    waitingMic = 400
+    waitingMic = 90
     waitingPos = 60
     let widthHistory = []
     let maxMic = -Infinity
@@ -106,8 +108,7 @@ function calibrationPhaseNear() {
 
     let nearCallback = (e) => {
         if (e.detail.vol > maxMic) { maxMic = e.detail.vol}
-        waitingMic -= 1
-        if (waitingMic % 1000 === 0) {console.log(waitingMic % 1000)}
+        if (e.detail.vol > minVol + 15) { waitingMic -= 1 }
         if (waitingMic <= 0) {
             console.log("setting maxVol")
             maxVol = maxMic
@@ -132,7 +133,7 @@ function calibrationPhaseFar() {
         "Then, say 'I'm ready to start!'")
     // ask for far, say "Ready to play"
     // wait for enough input
-    waitingMic = 40
+    waitingMic = 30
     waitingPos = 30
     let widthHistory = []
 
@@ -171,11 +172,21 @@ function endCalibration() {
 function gameIntro() {
     showInstruction("The cursor onscreen shows your position and volume." +
         "<br> To play: walk so your cursor matches the prompt, then speak the given word loudly!" +
-        "<br> Click to begin and to stop at any time.")
+        "<br> How fast can you get 15? Say \"Let's play\" to begin.")
 
-    document.onclick = gamePhase
+    waitingMic = 20
 
+    let startCall = (e) => {
+        if (e.detail.vol > minVol + 20) { waitingMic -= 1 }
+        if (waitingMic <= 0) {
+            document.removeEventListener("newSound", startCall)
+            gamePhase()
+        }
+    }
+    document.addEventListener("newSound", startCall)
 }
+
+
 
 function gamePhase() {
 
@@ -208,6 +219,7 @@ function gamePhase() {
     document.addEventListener("timesUp", endGame)
 
     drawChallenge()
+    startTime = new Date();
     gameRunning = true
 }
 
@@ -217,9 +229,11 @@ function showInstruction(s) {
 }
 
 function drawCursor() {
-     xPos = canvasWidth - distanceFromLeft() * canvasWidth
-    yPos = canvasHeight - distanceFromFront() * canvasHeight
+     xPos = Math.min(0, canvasWidth - distanceFromLeft() * canvasWidth)
+    yPos = Math.min(0, canvasHeight - distanceFromFront() * canvasHeight)
     vPos = getVolPct()
+    xPos = xPos > canvasWidth ? canvasWidth : xPos
+    yPos = yPos > canvasHeight ? canvasHeight : yPos
 
 
     posCursor.set({left: xPos, top: yPos, originX: 'center', originY: 'center'})
@@ -238,9 +252,12 @@ function drawCursor() {
 }
 
 function drawChallenge() {
+    if (score === 15) {endGame()}
     xCh = Math.random() * (canvasWidth - 200) + 100
     yCh = Math.random() * (canvasHeight - 140) + 70
-    let v = Math.max(0.5, Math.random() + 0.2)
+    if (yCh < 250) { xCh = Math.min(xCh, 450)}
+    let v = Math.max(0.5, Math.random())
+    if (yCh > 450) { v = Math.min(v, 0.7)}
 
     const randomWord = words[Math.floor(Math.random() * words.length)];
 
@@ -283,11 +300,18 @@ function checkChallenge() {
 
 function endGame() {
     gameRunning = false
+    let endTime = new Date();
+    let timeDiff = endTime - startTime; //in ms
+    // strip the ms
+    timeDiff /= 1000;
+
+    // get seconds
+    var seconds = Math.round(timeDiff);
 
     document.removeEventListener("newPose", drawCursor)
     document.removeEventListener("newSound", checkChallenge)
     document.removeEventListener("newPose", checkChallenge)
 
-    showInstruction("Time's up! Nice work, your score was " + score)
+    showInstruction("Nice work, your time was " + seconds + " seconds.")
 
 }
