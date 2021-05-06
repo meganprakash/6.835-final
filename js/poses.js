@@ -51,7 +51,7 @@ let moveThreshold = 100,
     lastSuccessTime,
     lastRequest
 
-
+let vid_d = document.getElementById("video-container")
 
 
 let avg = (array) => array.reduce((a, b) => a + b) / array.length;
@@ -66,6 +66,7 @@ function setup() {
 
     video = createCapture(VIDEO);
     video.size(width, height);
+    videoWidth = width
     poseNet = ml5.poseNet(video, "single", modelReady);
     // Hide the video element, and just show the canvas
     video.hide();
@@ -112,20 +113,26 @@ function processAudio() {
         }
         micVol_smoothed = avg(savedVol)
         micVol_positive = 100 + micVol_smoothed
+
+        let e = new CustomEvent("newSound", {
+            bubbles: true,
+            detail: {
+                vol: micVol_positive
+            }
+        });
+        vid_d.dispatchEvent(e)
     }
-    printMicDebug()
-    let e = new Event("newSound", {
-        bubbles: true,
-        vol: micVol_positive
-    })
+    updateMicDebug()
+
     requestAnimationFrame(processAudio);
 }
 
-function printMicDebug() {
+function updateMicDebug() {
 
     let str = "mic peak: " + micVol_positive + "<br>" +
         "minVol: " + minVol + "<br>" +
-        "maxVol: " + maxVol
+        "maxVol: " + maxVol + "<br>" +
+        "waitingMic" + waitingMic
 
     select("#micDebug").html(str)
 }
@@ -165,9 +172,16 @@ function setPoseListeners() {
                 savedRightShoulders.shift()
             }
             rightShoulder_smoothed = gmean(savedRightShoulders)
-        }        distanceBetweenShoulders = Math.abs(rightShoulder_smoothed - leftShoulder_smoothed)
+        }
+        distanceBetweenShoulders = Math.abs(rightShoulder_smoothed - leftShoulder_smoothed)
         poseReady = true // we have keypoints to proceed
         updatePoseDebug()
+        let e = new CustomEvent("newPose", {
+            bubbles: true
+        });
+        vid_d.dispatchEvent(e)
+
+
     });
 }
 

@@ -54,10 +54,10 @@ function setMaxVol(array) {
 Send an array of collected shoulder widths
  */
 function calibrateShoulderDepth(widthPxArray, which) {
-    if (which === "max") {
+    if (which === "near") {
         maxShoulder = gmean(widthPxArray)
-        calibrationDebugDiv.innerText += "maxShoulder: " + maxShoulder
-    } else if (which === "min") {
+        calibrationDebugDiv.innerText = "maxShoulder: " + maxShoulder + "<br>"
+    } else if (which === "far") {
         minShoulder = gmean(widthPxArray)
         calibrationDebugDiv.innerText += "minShoulder: " + minShoulder
     } else {
@@ -69,24 +69,32 @@ function calibrateShoulderDepth(widthPxArray, which) {
 Return the distance from front, in percentage [0, 100] of distance range
 Call this during gameplay
  */
-function distanceFromFront(widthPxArray) {
-    let w = gmean(widthPxArray)
-
+function distanceFromFront() {
+    let w = distanceBetweenShoulders
     if (w >= maxShoulder) { return 100 }
     else if (w <= minShoulder) {return 0}
 
     let range = maxShoulder - minShoulder
     let ratio = (w - minShoulder) / range
 
-    calibrationDebugDiv.innerText = "distanceFromFront: " + ratio*100
-    return ratio * 100
+    calibrationDebugDiv.innerText = "distanceFromFront: " + ratio*100.0
+    return ratio * 100.0
 }
 
 /*
 Return the distance from the left, in percentage [0, 100] of distance range
 xPxArray = collection of x-position samples
  */
-function distanceFromLeft(xPxArray) {
-    let d = gmean(xPxArray)
-    return videoWidth/d * 100
+function distanceFromLeft() {
+    let d = leftShoulder_smoothed
+    console.log(d)
+    console.log("videoWidth" + videoWidth)
+    return d/videoWidth * 100.0
 }
+
+function getVolPct() {
+    let range = maxVol - minVol
+    let ratio = (micVol_positive - minVol) / range
+    return ratio*100.0
+}
+

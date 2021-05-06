@@ -17,7 +17,9 @@ let canvas,
     posCursor,
     volCursor,
     challengePosCursor,
-    challengeVolCursor
+    challengeVolCursor,
+    canvasWidth = 800,
+    canvasHeight = 600
 
 let micRatio = 0,
     posX = 0,
@@ -32,7 +34,7 @@ let waitingMic = 0, // how many samples do we want?
 
 let micHistory = [] // append to a certain length to verify something said
 
-let d = document.getElementById("game-canvas")
+let canvas_d = document.getElementById("game-canvas")
 
 
 /*
@@ -46,20 +48,21 @@ function setup_game() {
         backgroundColor: 'rgb(100,100,100)'
     });
 
-    canvas.setHeight(600)
-    canvas.setWidth(800);
+    canvas.setHeight(canvasHeight)
+    canvas.setWidth(canvasWidth);
     canvas.renderAll()
 
-    d.addEventListener("newSound", setAmbientVol) // wait til there is enough ambient data
-    d.removeEventListener("newSound", setAmbientVol)
-
+    document.addEventListener("newSound", setAmbientVol) // wait til there is enough ambient data
 }
 
 function setAmbientVol(e) {
-    micHistory.push(e.vol)
-    if (micHistory.length > 200) {
+    micHistory.push(e.detail.vol)
+    if (micHistory.length > 100) {
+        console.log("Setting min vol")
         minVol = avg(micHistory)
         micHistory = []
+        updateMicDebug()
+        document.removeEventListener("newSound", setAmbientVol)
         calibrationPhaseNear()
     }
 }
@@ -68,23 +71,41 @@ function calibrationPhaseNear() {
     showInstruction("Welcome! This is the calibration phase. Please stand " +
         "4 feet away from your computer, and say 'Hi! My name is [your name]'")
 
-    waitingMic = 10000
+    waitingMic = 90
+    waitingPos = 60
+    let widthHistory = []
     let maxMic = -Infinity
-    drawCursor(400, 300, 0)
     // cursor position at center and mic is 0
 
+    let minDistanceCallback = (e) => {
+        if (distanceBetweenShoulders) {
+            waitingPos -= 1
+            widthHistory.push(distanceBetweenShoulders)
+            if (waitingPos <= 0) {
+                console.log("setting near distance")
+                calibrateShoulderDepth(widthHistory, "near")
+                widthHistory = []
+                document.removeEventListener("newPose", minDistanceCallback)
+                calibrationPhaseFar()
+            }
+        }
+    }
+
     let nearCallback = (e) => {
-        if (e.vol > maxMic) { maxMic = e.vol}
+        if (e.detail.vol > maxMic) { maxMic = e.detail.vol}
         waitingMic -= 1
         if (waitingMic % 1000 === 0) {console.log(waitingMic % 1000)}
         if (waitingMic <= 0) {
+            console.log("setting maxVol")
             maxVol = maxMic
             micHistory = []
             waitingMic = 0
-            d.removeEventListener("newSound", nearCallback)
+            updateMicDebug()
+            document.removeEventListener("newSound", nearCallback)
+            document.addEventListener("newPose", minDistanceCallback)
         }
     }
-    d.addEventListener("newSound", nearCallback)
+    document.addEventListener("newSound", nearCallback)
 
     // set listener, callback is far
     // ask for near, say "Hi, my name is"
@@ -93,53 +114,57 @@ function calibrationPhaseNear() {
 
 }
 
-function addNearCalibrationListeners() {
-    // new mic val, are we waiting for mic? if so, add to micHistory
-    //  and see if we have enough. if so, clear micHistory and turn off waiting.
-    // also, redraw mic cursor
-    d.addEventListener("newSound", function(event) {
-        if (waitingMic) {
-            micHistory.push(event.vol)
-            if (micHistory)
-        }
-    })
-
-
-    // new pose val, are we waiting for pos? if so, add to posX and posY, then turn
-    //  off waiting.
-    // also, redraw pos cursor
-    d.addEventListener("newPose", function() {
-
-
-    })
-
-
-}
-
-
 function calibrationPhaseFar() {
+    showInstruction("Thanks, that was great! Next, please stand 8 feet from your computer." +
+        "Then, say 'I'm ready to start!'")
     // ask for far, say "Ready to play"
     // wait for enough input
+    waitingMic = 30
+    waitingPos = 30
+    let widthHistory = []
 
-    // removes listeners for calibration and adds the ones for game
+    let maxDistanceCallback = (e) => {
+        if (distanceBetweenShoulders) {
+            waitingPos -= 1
+            widthHistory.push(distanceBetweenShoulders)
+            if (waitingPos <= 0) {
+                console.log("setting far distance")
+                calibrateShoulderDepth(widthHistory, "far")
+                document.removeEventListener("newPose", maxDistanceCallback)
+                endCalibration()
+            }
+        }
+    }
 
-    // then start game
+    let farCallback = (e) => {
+        if (e.detail.vol > minVol + 10) { waitingMic -= 1 }
+        if (waitingMic <= 0) {
+            console.log("calibrationPhaseFar: heard speech")
+            updateMicDebug()
+            document.removeEventListener("newSound", farCallback)
+            document.addEventListener("newPose", maxDistanceCallback)
+        }
+    }
+    document.addEventListener("newSound", farCallback)
+
 }
 
 function endCalibration() {
-    showInstruction("The game board is set up. Let's play!")
     gamePhase()
 }
 
-function addGameListeners() {
-    // TBD, might not need this
-    // new mic val, updates mic ratio, redraws mic cursor, checks challenge
-
-    // new pose val, updates cursor position, redraws cursor, checks challenge
-}
-
 function gamePhase() {
-    // start game
+    showInstruction("The cursor onscreen shows your position and volume. To complete the challenges," +
+        "walk so your cursor matches the prompt, then speak loudly enough to match the volume circle." +
+        "See how many you can get in 2 minutes!")
+
+    posCursor = new fabric.Circle({
+        radius: 20, fill: 'white', left: 100, top: 100
+    });
+    canvas.add(posCursor)
+
+    document.addEventListener("newPose", drawCursor)
+
 
     // loop K times to create K challenges
     // challenges request an animation frame?
@@ -150,22 +175,35 @@ function gamePhase() {
 function showInstruction(s) {
     // show string s in the instructions div
     document.getElementById("instructions").innerText = s
-
 }
 
-function drawCursor(x, y, currentVol) {
+function drawCursor() {
+    let x = distanceFromLeft() * canvasWidth
+    let y = canvasHeight - distanceFromFront() * canvasHeight
+    let v = getVolPct()
 
-    // circle with center at location of player
+    console.log("drawing cursor: " + x + ", " + y + ", " + v)
+
+    posCursor.set({left: x, top: y})
 
     // ring showing smoothed mic volume
     // max radius corresponds to the upper volume threshold
-    // min radius is still > 0 and is near the min threshold
+    // min radius is still > 0 an
 
-    canvas.renderAll()
+
+    // also show gameplay debug
+    let str = "distanceFromFront: " + distanceFromFront() + "<br>"
+        + "distanceFromLeft: " + distanceFromLeft() + "<br>"
+    + "vol pct" + getVolPct()
+
+    document.getElementById("calibrationDebug").innerHTML = str
 
 }
 
-function drawChallenge(x, y, promptText, promptVol) {
+function drawChallenge() {
+    // random x
+    // random y
+    // random vol %
 
     canvas.renderAll()
 }
@@ -174,4 +212,6 @@ function checkChallenge() {
     // check position
 
     // if position, check volume
+
+    // if both, then draw challenge
 }
