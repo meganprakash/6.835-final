@@ -229,8 +229,8 @@ function showInstruction(s) {
 }
 
 function drawCursor() {
-     xPos = Math.min(0, canvasWidth - distanceFromLeft() * canvasWidth)
-    yPos = Math.min(0, canvasHeight - distanceFromFront() * canvasHeight)
+     xPos = Math.max(0, canvasWidth - distanceFromLeft() * canvasWidth)
+    yPos = Math.max(0, canvasHeight - distanceFromFront() * canvasHeight)
     vPos = getVolPct()
     xPos = xPos > canvasWidth ? canvasWidth : xPos
     yPos = yPos > canvasHeight ? canvasHeight : yPos
