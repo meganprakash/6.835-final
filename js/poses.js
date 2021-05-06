@@ -19,8 +19,20 @@ Draws video with overlaid pose points
 
 === */
 
+let ac,
+    an,
+    source = "",
+    buffer,
+    scriptProcessorNode
+
+let micVolSmoothing = 10,
+    savedVol = [],
+    micVol_smoothed,
+    micVol_positive
 
 let video,
+    videoWidth,
+    videoHeight,
     poseNet,
     poseReady, // a pose has been detected with necessary keypoints
     poses = [];
@@ -39,22 +51,77 @@ let moveThreshold = 100,
     lastSuccessTime,
     lastRequest
 
+
+
+
 let avg = (array) => array.reduce((a, b) => a + b) / array.length;
 
 function setup() {
+
     const videoCanvas = createCanvas(600, 400);
     videoCanvas.parent("#video-container")
     videoCanvas.scale(0.5)
     background(51)
     frameRate(30)
+
     video = createCapture(VIDEO);
     video.size(width, height);
-
-    poseNet = ml5.poseNet(video, modelReady);
-
-
+    poseNet = ml5.poseNet(video, "single", modelReady);
     // Hide the video element, and just show the canvas
     video.hide();
+
+    setup_game()
+}
+
+function touchStarted() {
+    ac = new AudioContext();
+    an = ac.createAnalyser();
+    source = "";
+    buffer = new Float32Array(an.frequencyBinCount);
+    scriptProcessorNode = ac.createScriptProcessor(16384, 1, 1);
+    if (navigator.getUserMedia) {
+        navigator.getUserMedia(
+            {audio:true},
+            function(stream) {
+                source = ac.createMediaStreamSource(stream);
+                source.connect(an);
+                requestAnimationFrame(processAudio);
+            },
+            function(e) {
+                alert('Error capturing audio.');
+            }
+        );
+    }
+
+}
+
+function processAudio() {
+    an.getFloatFrequencyData(buffer);
+    let peak = -Infinity;
+    for (let i = 0; i < buffer.length; i++) {
+        const x = buffer[i];
+        if (x > peak) {
+            peak = x;
+        }
+    }
+    if (peak > -Infinity) {
+        savedVol.push(peak)
+    }
+    if (savedVol.length > micVolSmoothing) {
+        savedVol.shift()
+    }
+    micVol_smoothed = avg(savedVol)
+    micVol_positive = 100 + micVol_smoothed
+    printMicDebug()
+}
+
+function printMicDebug() {
+
+    let str = "mic peak: " + micVol_positive + "<br>" +
+        "minVol: " + minVol + "<br>" +
+        "maxVol: " + maxVol
+
+    select("#micDebug").html(str)
 }
 
 /*
@@ -82,7 +149,7 @@ function setPoseListeners() {
             if (savedLeftShoulders.length > poseSmoothing) {
                 savedLeftShoulders.shift()
             }
-            leftShoulder_smoothed = avg(savedLeftShoulders)
+            leftShoulder_smoothed = gmean(savedLeftShoulders)
         }
 
         // check if right shoulder confidence is high enough
@@ -91,26 +158,22 @@ function setPoseListeners() {
             if (savedRightShoulders.length > poseSmoothing) {
                 savedRightShoulders.shift()
             }
-            rightShoulder_smoothed = avg(savedRightShoulders)
-
-        }
-
-        distanceBetweenShoulders = Math.abs(rightShoulder_smoothed - leftShoulder_smoothed)
+            rightShoulder_smoothed = gmean(savedRightShoulders)
+        }        distanceBetweenShoulders = Math.abs(rightShoulder_smoothed - leftShoulder_smoothed)
         poseReady = true // we have keypoints to proceed
-        updateDebug()
+        updatePoseDebug()
     });
 }
 
 /*
 Write the debug data to the page.
  */
-function updateDebug() {
+function updatePoseDebug() {
     let str =
         "leftShoulder x: " + leftShoulder_smoothed + "<br>" +
-        "distanceBetweenShoulders: " + distanceBetweenShoulders
+        "distanceBetweenShoulders: " + distanceBetweenShoulders + "<br>"
 
     select("#poseDebug").html(str)
-
 }
 
 function modelReady() {
@@ -133,6 +196,9 @@ function draw() {
     // We can call both functions to draw all keypoints and the skeletons
     drawKeypoints();
     drawSkeleton();
+
+    processAudio()
+
 
 }
 

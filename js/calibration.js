@@ -16,3 +16,77 @@ to the square of distance. Measure volume in terms of % of speaking volume.
  */
 
 // need to collect shoulder width over 2 seconds and find geometric mean!!
+
+
+let maxShoulder; // near distance
+let minShoulder; // far distance
+let minVol,
+    maxVol
+let calibrationDebugDiv = document.getElementById("calibrationDebug")
+
+var gmean = function (array) {
+   let n = array.length
+
+    console.assert(n > 0)
+   let product = array.reduce((a, b) => a * b)
+    return Math.pow(product, 1/n)
+}
+
+/*
+Collect hella vol samples when user is not speaking, use it for the min vol
+ */
+function setMinVol(array) {
+    minVol = avg(array)
+}
+
+/*
+This is the voice sample from when user was asked to speak
+Take all the positive values after subtracting the ambient
+Then avg those
+ */
+function setMaxVol(array) {
+    let normalized = array.map((a) => a - minVol)
+    let nonzero = normalized.filter((a) => a > 0)
+    maxVol = avg(array)
+}
+
+/*
+Send an array of collected shoulder widths
+ */
+function calibrateShoulderDepth(widthPxArray, which) {
+    if (which === "max") {
+        maxShoulder = gmean(widthPxArray)
+        calibrationDebugDiv.innerText += "maxShoulder: " + maxShoulder
+    } else if (which === "min") {
+        minShoulder = gmean(widthPxArray)
+        calibrationDebugDiv.innerText += "minShoulder: " + minShoulder
+    } else {
+        calibrationDebugDiv.innerText = "Error: calibrateShoulder received invalid argument: " + which
+    }
+}
+
+/*
+Return the distance from front, in percentage [0, 100] of distance range
+Call this during gameplay
+ */
+function distanceFromFront(widthPxArray) {
+    let w = gmean(widthPxArray)
+
+    if (w >= maxShoulder) { return 100 }
+    else if (w <= minShoulder) {return 0}
+
+    let range = maxShoulder - minShoulder
+    let ratio = (w - minShoulder) / range
+
+    calibrationDebugDiv.innerText = "distanceFromFront: " + ratio*100
+    return ratio * 100
+}
+
+/*
+Return the distance from the left, in percentage [0, 100] of distance range
+xPxArray = collection of x-position samples
+ */
+function distanceFromLeft(xPxArray) {
+    let d = gmean(xPxArray)
+    return videoWidth/d * 100
+}
