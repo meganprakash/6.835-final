@@ -25,7 +25,7 @@ let ac,
     buffer,
     scriptProcessorNode
 
-let micVolSmoothing = 10,
+let micVolSmoothing = 20,
     savedVol = [],
     micVol_smoothed,
     micVol_positive
@@ -38,7 +38,7 @@ let video,
     poses = [];
 
 // saving only the horizontal coordinates of shoulders
-let poseSmoothing = 30, // how many poses to keep
+let poseSmoothing = 40, // how many poses to keep
     savedLeftShoulders = [],
     leftShoulder_smoothed,
     savedRightShoulders = [],
@@ -70,6 +70,7 @@ function setup() {
     poseNet = ml5.poseNet(video, "single", modelReady);
     // Hide the video element, and just show the canvas
     video.hide();
+    showInstruction("Click to begin!")
 
     setup_game()
 }
@@ -128,6 +129,7 @@ function processAudio() {
 }
 
 function updateMicDebug() {
+    if (gameRunning) { return; }
 
     let str = "mic peak: " + micVol_positive + "<br>" +
         "minVol: " + minVol + "<br>" +
@@ -189,6 +191,7 @@ function setPoseListeners() {
 Write the debug data to the page.
  */
 function updatePoseDebug() {
+    if (gameRunning) { return; }
     let str =
         "leftShoulder x: " + leftShoulder_smoothed + "<br>" +
         "distanceBetweenShoulders: " + distanceBetweenShoulders + "<br>"

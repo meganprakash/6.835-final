@@ -21,14 +21,29 @@
             font-family: Arial;
             font-size: 30px;
             float: left;
-            text-align: left;
-            padding: 20px;
-            width: 100%;
+            text-align: center;
+            padding: 10px;
+            width: 80%;
+            line-height: 1.6
         }
 
         #status {
             font-family: Arial;
             font-size: 15px;
+        }
+
+        #game-col {
+            float: left;
+            display: inline-block;
+        }
+
+        #game-canvas {
+            align-content: center;
+        }
+        
+        #video-container {
+            float: right;
+            display: inline-block;
         }
 
         .flex-container {
@@ -46,7 +61,7 @@
         }
 
         .flex-child-video {
-            width:600px;
+            width:200px;
         }
 
         .break {
@@ -54,8 +69,10 @@
             height: 0;
         }
 
-        #instructions {
-            font-size: 18px;
+
+        #score {
+            font-size: 28px;
+            font-weight: bolder;
         }
 
 
@@ -64,28 +81,27 @@
 </head>
 
 <body>
-<h1>Take Up Space!</h1>
+<h1 id="instructions">Instructions here</h1>
 <p id='status'>Loading model...</p>
 
 
-<div class="flex-container">
-    <div id="game-col" class="flex-child">
-        <div id="info" class="flex-child full">
-            <div id="instructions">Instructions here</div>
-            <div id="poseDebug">Pose debug info</div>
-            <div id="calibrationDebug">Calibration debug info</div>
-            <div id="micDebug">Mic debug info</div>
+<div class="container">
+    <div id="game-col">
+        <div id="info">
+            <div id="score"></div>
         </div>
-
         <br>
-
         <div id="game-canvas" class="flex-child "><canvas id="game"></canvas></div>
     </div>
 
-    <div id="video-container" class="flex-child-video">
+    <div id="video-container">
     </div>
 
 </div>
+
+<div id="poseDebug">Pose debug info</div>
+<div id="calibrationDebug">Calibration debug info</div>
+<div id="micDebug">Mic debug info</div>
 </body>
 
 <script src="js/poses.js"></script>

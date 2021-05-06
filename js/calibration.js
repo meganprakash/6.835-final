@@ -78,7 +78,7 @@ function distanceFromFront() {
     let ratio = (w - minShoulder) / range
 
     calibrationDebugDiv.innerText = "distanceFromFront: " + ratio*100.0
-    return ratio * 100.0
+    return ratio
 }
 
 /*
@@ -87,14 +87,15 @@ xPxArray = collection of x-position samples
  */
 function distanceFromLeft() {
     let d = leftShoulder_smoothed
-    console.log(d)
-    console.log("videoWidth" + videoWidth)
-    return d/videoWidth * 100.0
+    d = (d > videoWidth - 20) ? (videoWidth - 20) : d
+    d = d < 20 ? 20 : d
+    return d/videoWidth
 }
 
 function getVolPct() {
     let range = maxVol - minVol
     let ratio = (micVol_positive - minVol) / range
-    return ratio*100.0
+    ratio = ratio < 0 ? 0 : ratio
+    return ratio
 }
 

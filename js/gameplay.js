@@ -18,16 +18,23 @@ let canvas,
     volCursor,
     challengePosCursor,
     challengeVolCursor,
-    canvasWidth = 800,
-    canvasHeight = 600
+    challengeText,
+    canvasWidth = 1000,
+    canvasHeight = 800
 
 let micRatio = 0,
     posX = 0,
     posY = 0
 
+let xPos, yPos, vPos
+
 let challengeVol = Infinity,
     challengeX = Infinity,
-    challengeY = Infinity
+    challengeY = Infinity,
+    currentChallenge = false,
+    currentPosChallenge = false,
+    currentVolChallenge = Infinity,
+    score = 0
 
 let waitingMic = 0, // how many samples do we want?
     waitingPos = 0
@@ -35,6 +42,12 @@ let waitingMic = 0, // how many samples do we want?
 let micHistory = [] // append to a certain length to verify something said
 
 let canvas_d = document.getElementById("game-canvas")
+
+let timer,
+    gameRunning = false
+
+let words = ["amazement","attention","banana", "blindingly", "conference", "electric",
+    "glacier", "horizon", "instrument", "numerous", "photograph", "typical"]
 
 
 /*
@@ -69,9 +82,9 @@ function setAmbientVol(e) {
 
 function calibrationPhaseNear() {
     showInstruction("Welcome! This is the calibration phase. Please stand " +
-        "4 feet away from your computer, and say 'Hi! My name is [your name]'")
+        "3 feet away from your computer, and say 'Hi! My name is [your name]'")
 
-    waitingMic = 90
+    waitingMic = 500
     waitingPos = 60
     let widthHistory = []
     let maxMic = -Infinity
@@ -115,11 +128,11 @@ function calibrationPhaseNear() {
 }
 
 function calibrationPhaseFar() {
-    showInstruction("Thanks, that was great! Next, please stand 8 feet from your computer." +
+    showInstruction("Thanks, that was great! Next, please stand 6 feet from your computer." +
         "Then, say 'I'm ready to start!'")
     // ask for far, say "Ready to play"
     // wait for enough input
-    waitingMic = 30
+    waitingMic = 40
     waitingPos = 30
     let widthHistory = []
 
@@ -137,7 +150,7 @@ function calibrationPhaseFar() {
     }
 
     let farCallback = (e) => {
-        if (e.detail.vol > minVol + 10) { waitingMic -= 1 }
+        if (e.detail.vol > minVol + 20) { waitingMic -= 1 }
         if (waitingMic <= 0) {
             console.log("calibrationPhaseFar: heard speech")
             updateMicDebug()
@@ -150,68 +163,142 @@ function calibrationPhaseFar() {
 }
 
 function endCalibration() {
-    gamePhase()
+    document.getElementById("poseDebug").style.display = "none"
+    document.getElementById("micDebug").style.display = "none"
+    gameIntro()
+}
+
+function gameIntro() {
+    showInstruction("The cursor onscreen shows your position and volume." +
+        "<br> To complete the challenges, walk so your cursor matches the prompt, then speak the given word loudly" +
+        " enough to match the volume circle." +
+        "<p> See how many you can get in 1 minute! </p>" +
+        "Click here to stop at any time.")
+
+    var t = fabric.Text("Starting in 3... ", {fontSize: 40, left: "center", top: "center"})
+
+    setTimeout(() => {
+        t.set('text', "Starting in 2..."); canvas.renderAll()
+    }, 2000)
+
+    setTimeout(() => {
+        t.set('text', "Starting in 1..."); canvas.renderAll()
+    }, 1000)
+
+    setTimeout(gamePhase, 1000)
 }
 
 function gamePhase() {
-    showInstruction("The cursor onscreen shows your position and volume. To complete the challenges," +
-        "walk so your cursor matches the prompt, then speak loudly enough to match the volume circle." +
-        "See how many you can get in 2 minutes!")
+
+    challengePosCursor = new fabric.Circle({
+        radius: 100, fill: 'rgba(0,0,0,0)', strokeWidth: 10, stroke: 'rgb(250,250,250)', left:100, top:100
+    })
+    challengeVolCursor = new fabric.Circle({
+        radius: 100, fill: 'rgba(0,0,0,0)', strokeWidth: 10, stroke: 'rgb(200,300,0)', left:100, top:100
+    })
+    canvas.add(challengeVolCursor, challengePosCursor)
 
     posCursor = new fabric.Circle({
         radius: 20, fill: 'white', left: 100, top: 100
     });
-    canvas.add(posCursor)
+    volCursor = new fabric.Circle({
+        radius: 30, fill: 'rgb(0,160,0)', left: 100, top: 100
+    });
+    canvas.add(volCursor, posCursor)
+
+
+    let e = new CustomEvent("timesUp", {
+        bubbles: true,
+    });
+    timer = setTimeout(endGame, 120000)
+    document.getElementById("instructions").onclick = () => {clearTimeout(timer); endGame()}
 
     document.addEventListener("newPose", drawCursor)
+    document.addEventListener("newSound", checkChallenge)
+    document.addEventListener("newPose", checkChallenge)
+    document.addEventListener("timesUp", endGame)
 
-
-    // loop K times to create K challenges
-    // challenges request an animation frame?
-
-    // end game
+    drawChallenge()
+    gameRunning = true
 }
 
 function showInstruction(s) {
     // show string s in the instructions div
-    document.getElementById("instructions").innerText = s
+    document.getElementById("instructions").innerHTML = s
 }
 
 function drawCursor() {
-    let x = distanceFromLeft() * canvasWidth
-    let y = canvasHeight - distanceFromFront() * canvasHeight
-    let v = getVolPct()
+     xPos = canvasWidth - distanceFromLeft() * canvasWidth
+    yPos = canvasHeight - distanceFromFront() * canvasHeight
+    vPos = getVolPct()
 
-    console.log("drawing cursor: " + x + ", " + y + ", " + v)
 
-    posCursor.set({left: x, top: y})
-
-    // ring showing smoothed mic volume
-    // max radius corresponds to the upper volume threshold
-    // min radius is still > 0 an
-
+    posCursor.set({left: xPos, top: yPos, originX: 'center', originY: 'center'})
+    volCursor.set({left: xPos, top: yPos, radius: (20 + 30*vPos), originX: 'center', originY: 'center'})
+    canvas.renderAll();
 
     // also show gameplay debug
     let str = "distanceFromFront: " + distanceFromFront() + "<br>"
         + "distanceFromLeft: " + distanceFromLeft() + "<br>"
     + "vol pct" + getVolPct()
 
+    document.getElementById("micDebug").style.display = "none"
+    document.getElementById("poseDebug").style.display = "none"
     document.getElementById("calibrationDebug").innerHTML = str
 
 }
 
 function drawChallenge() {
-    // random x
-    // random y
-    // random vol %
+    xCh = Math.random() * (canvasWidth - 40) + 20
+    yCh = Math.random() * (canvasHeight - 40) + 20
+    let v = Math.max(0.5, Math.random() + 0.3)
 
+    const randomWord = words[Math.floor(Math.random() * words.length)];
+
+    showInstruction("your word: " + randomWord)
+
+    currentChallenge = true
+    currentPosChallenge = true
+    currentVolChallenge = v
+
+    challengePosCursor.opacity = 1
+
+    challengePosCursor.set({left: xCh, top: yCh, originX: 'center', originY: 'center'})
+    challengeVolCursor.set({left: xCh, top: yCh, radius: (30 + 30*v), originX: 'center', originY: 'center'})
     canvas.renderAll()
 }
 
 function checkChallenge() {
-    // check position
+    if(currentChallenge) {
+        // see if posCursor intersects challengePosCursor
+        if(Math.abs(xPos - xCh) < 20 && Math.abs(yPos - yCh) < 20){
+            currentPosChallenge = false
+            challengePosCursor.opacity = 0
+        }
 
-    // if position, check volume
+        if(currentPosChallenge === false) {
+            let x = canvasWidth - distanceFromLeft() * canvasWidth
+            let y = canvasHeight - distanceFromFront() * canvasHeight
+            challengeVolCursor.set({left: x, top: y, radius: (20 + 10*currentVolChallenge)})
 
-    // if both, then draw challenge
+            if(Math.abs(getVolPct() - currentVolChallenge) < 0.1) {
+                currentVolChallenge = Infinity
+                currentChallenge = false
+                score += 1
+                drawChallenge()
+            }
+        }
+        document.getElementById("score").innerText = "score: " + score
+    }
+}
+
+function endGame() {
+    gameRunning = false
+
+    document.removeEventListener("newPose", drawCursor)
+    document.removeEventListener("newSound", checkChallenge)
+    document.removeEventListener("newPose", checkChallenge)
+
+    showInstruction("Time's up! Nice work, your score was " + score)
+
 }
