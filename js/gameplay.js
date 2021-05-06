@@ -129,7 +129,7 @@ function calibrationPhaseNear() {
 }
 
 function calibrationPhaseFar() {
-    showInstruction("Thanks, that was great! Next, please stand 6 feet from your computer." +
+    showInstruction("Thanks, that was great! Next, take 3 steps back." +
         "Then, say 'I'm ready to start!'")
     // ask for far, say "Ready to play"
     // wait for enough input
