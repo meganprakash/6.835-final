@@ -106,13 +106,19 @@ function processAudio() {
     }
     if (peak > -Infinity) {
         savedVol.push(peak)
+
+        if (savedVol.length > micVolSmoothing) {
+            savedVol.shift()
+        }
+        micVol_smoothed = avg(savedVol)
+        micVol_positive = 100 + micVol_smoothed
     }
-    if (savedVol.length > micVolSmoothing) {
-        savedVol.shift()
-    }
-    micVol_smoothed = avg(savedVol)
-    micVol_positive = 100 + micVol_smoothed
     printMicDebug()
+    let e = new Event("newSound", {
+        bubbles: true,
+        vol: micVol_positive
+    })
+    requestAnimationFrame(processAudio);
 }
 
 function printMicDebug() {
@@ -196,10 +202,6 @@ function draw() {
     // We can call both functions to draw all keypoints and the skeletons
     drawKeypoints();
     drawSkeleton();
-
-    processAudio()
-
-
 }
 
 
