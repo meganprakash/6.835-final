@@ -171,7 +171,7 @@ function endCalibration() {
 function gameIntro() {
     showInstruction("The cursor onscreen shows your position and volume." +
         "<br> To play: walk so your cursor matches the prompt, then speak the given word loudly!" +
-        "Click to begin and to stop at any time.")
+        "<br> Click to begin and to stop at any time.")
 
     document.onclick = gamePhase
 
