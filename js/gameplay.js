@@ -255,7 +255,7 @@ function drawChallenge() {
     if (score === 15) {endGame()}
     xCh = Math.random() * (canvasWidth - 200) + 100
     yCh = Math.random() * (canvasHeight - 140) + 70
-    if (yCh < 250) { xCh = Math.min(xCh, 450)}
+    if (yCh < 250) { xCh = Math.min(xCh, 300)}
     let v = Math.max(0.5, Math.random())
     if (yCh > 450) { v = Math.min(v, 0.7)}
 
