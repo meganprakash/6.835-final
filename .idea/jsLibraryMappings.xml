@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="JavaScriptLibraryMappings">
-    <file url="PROJECT" libraries="{fabric.js, ml5, pixi.js}" />
+    <file url="PROJECT" libraries="{fabric.js, ml5, p5.js, phaser, pixi.js}" />
   </component>
 </project>

@@ -11,5 +11,7 @@
     <orderEntry type="library" name="pixi.js" level="application" />
     <orderEntry type="library" name="ml5" level="application" />
     <orderEntry type="library" name="fabric.js" level="application" />
+    <orderEntry type="library" name="phaser" level="application" />
+    <orderEntry type="library" name="p5.js" level="application" />
   </component>
 </module>
