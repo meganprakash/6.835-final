@@ -38,7 +38,7 @@ let video,
     poses = [];
 
 // saving only the horizontal coordinates of shoulders
-let poseSmoothing = 40, // how many poses to keep
+let poseSmoothing = 10, // how many poses to keep
     savedLeftShoulders = [],
     leftShoulder_smoothed,
     savedRightShoulders = [],
@@ -58,9 +58,8 @@ let avg = (array) => array.reduce((a, b) => a + b) / array.length;
 
 function setup() {
 
-    const videoCanvas = createCanvas(600, 400);
+    const videoCanvas = createCanvas(300, 200);
     videoCanvas.parent("#video-container")
-    videoCanvas.scale(0.5)
     background(51)
     frameRate(30)
 
@@ -70,12 +69,13 @@ function setup() {
     poseNet = ml5.poseNet(video, "single", modelReady);
     // Hide the video element, and just show the canvas
     video.hide();
-    showInstruction("Click to begin!")
+
+    // showInstruction("Click to begin!")
 
     setup_game()
 }
 
-function touchStarted() {
+function initMic() {
     ac = new AudioContext();
     an = ac.createAnalyser();
     source = "";
@@ -97,7 +97,12 @@ function touchStarted() {
 
 }
 
+function destroyMic() {
+
+}
+
 function processAudio() {
+    if (typeof buffer == 'undefined') {return}
     an.getFloatFrequencyData(buffer);
     let peak = -Infinity;
     for (let i = 0; i < buffer.length; i++) {
@@ -122,8 +127,9 @@ function processAudio() {
             }
         });
         vid_d.dispatchEvent(e)
+
+        updateMicDebug()
     }
-    updateMicDebug()
 
     requestAnimationFrame(processAudio);
 }
@@ -131,10 +137,10 @@ function processAudio() {
 function updateMicDebug() {
     if (gameRunning) { return; }
 
-    let str = "mic peak: " + micVol_positive + "<br>" +
-        "minVol: " + minVol + "<br>" +
-        "maxVol: " + maxVol + "<br>" +
-        "waitingMic" + waitingMic
+    let str = "mic peak: " + micVol_positive.toFixed(2) + "<br>"
+    if (typeof minVol !== "undefined") {str += "minVol: " + minVol.toFixed(1) + "<br>"}
+    if (typeof maxVol !== "undefined") {str += "maxVol: " + maxVol.toFixed(1) + "<br>"}
+    if (typeof waitingMic !== "undefined") {str += "waitingMic: " + waitingMic}
 
     select("#micDebug").html(str)
 }
@@ -193,8 +199,8 @@ Write the debug data to the page.
 function updatePoseDebug() {
     if (gameRunning) { return; }
     let str =
-        "leftShoulder x: " + leftShoulder_smoothed + "<br>" +
-        "distanceBetweenShoulders: " + distanceBetweenShoulders + "<br>"
+        "leftShoulder x: " + leftShoulder_smoothed.toFixed(2) + "<br>" +
+        "distanceBetweenShoulders: " + distanceBetweenShoulders.toFixed(2) + "<br>"
 
     select("#poseDebug").html(str)
 }
@@ -202,6 +208,7 @@ function updatePoseDebug() {
 function modelReady() {
     console.log("Model loaded")
     select('#status').html('Model Loaded');
+    $(document).trigger('poseNetReady');
     setPoseListeners()
 }
 
@@ -213,7 +220,7 @@ Draws the webcam video and the keypoints overlaid
 function draw() {
     translate(width,0);
     scale(-1.0,1.0);    // flip x-axis backwards
-    image(video, 0, 0, 600, 400);
+    image(video, 0, 0, 300, 200);
 
 
     // We can call both functions to draw all keypoints and the skeletons

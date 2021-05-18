@@ -83,8 +83,8 @@ function setAmbientVol(e) {
 }
 
 function calibrationPhaseNear() {
-    showInstruction("Welcome! This is the calibration phase. Please stand " +
-        "3 feet away from your computer, and say 'Hi! My name is [your name]'")
+    // showInstruction("Welcome! This is the calibration phase. Please stand " +
+    //  "3 feet away from your computer, and say 'Hi! My name is [your name]'")
 
     waitingMic = 90
     waitingPos = 60
@@ -129,8 +129,8 @@ function calibrationPhaseNear() {
 }
 
 function calibrationPhaseFar() {
-    showInstruction("Thanks, that was great! Next, take 3 steps back." +
-        "Then, say 'I'm ready to start!'")
+    // showInstruction("Thanks, that was great! Next, take 3 steps back." +
+    //     "Then, say 'I'm ready to start!'")
     // ask for far, say "Ready to play"
     // wait for enough input
     waitingMic = 30
@@ -170,9 +170,9 @@ function endCalibration() {
 }
 
 function gameIntro() {
-    showInstruction("The cursor onscreen shows your position and volume." +
-        "<br> To play: walk so your cursor matches the prompt, then speak the given word loudly!" +
-        "<br> How fast can you get 15? Say \"Let's play\" to begin.")
+    // showInstruction("The cursor onscreen shows your position and volume." +
+    //    "<br> To play: walk so your cursor matches the prompt, then speak the given word loudly!" +
+    //    "<br> How fast can you get 15? Say \"Let's play\" to begin.")
 
     waitingMic = 20
 
@@ -222,10 +222,10 @@ function gamePhase() {
     gameRunning = true
 }
 
-function showInstruction(s) {
-    // show string s in the instructions div
-    document.getElementById("instructions").innerHTML = s
-}
+// function showInstruction(s) {
+//     // show string s in the instructions div
+//     document.getElementById("instructions").innerHTML = s
+// }
 
 function drawCursor() {
      xPos = Math.max(0, canvasWidth - distanceFromLeft() * canvasWidth)
@@ -240,9 +240,9 @@ function drawCursor() {
     canvas.renderAll();
 
     // also show gameplay debug
-    let str = "distanceFromFront: " + distanceFromFront() + "<br>"
-        + "distanceFromLeft: " + distanceFromLeft() + "<br>"
-    + "vol pct" + getVolPct()
+    let str = "distanceFromFront: " + distanceFromFront().toFixed(2) + "<br>"
+        + "distanceFromLeft: " + distanceFromLeft().toFixed(2) + "<br>"
+    + "vol pct" + getVolPct().toFixed(2)
 
     document.getElementById("micDebug").style.display = "none"
     document.getElementById("poseDebug").style.display = "none"
@@ -259,7 +259,7 @@ function drawChallenge() {
 
     const randomWord = words[Math.floor(Math.random() * words.length)];
 
-    showInstruction("your word: " + randomWord)
+    // showInstruction("your word: " + randomWord)
 
     currentChallenge = true
     currentPosChallenge = true
@@ -311,6 +311,6 @@ function endGame() {
     document.removeEventListener("newSound", checkChallenge)
     document.removeEventListener("newPose", checkChallenge)
 
-    showInstruction("Nice work, your time was " + seconds + " seconds.")
+    // showInstruction("Nice work, your time was " + seconds + " seconds.")
 
 }

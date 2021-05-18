@@ -56,10 +56,10 @@ Send an array of collected shoulder widths
 function calibrateShoulderDepth(widthPxArray, which) {
     if (which === "near") {
         maxShoulder = gmean(widthPxArray)
-        calibrationDebugDiv.innerText = "maxShoulder: " + maxShoulder + "<br>"
+        calibrationDebugDiv.innerText = "maxShoulder: " + maxShoulder.toFixed(2)
     } else if (which === "far") {
         minShoulder = gmean(widthPxArray)
-        calibrationDebugDiv.innerText += "minShoulder: " + minShoulder
+        calibrationDebugDiv.innerText += "minShoulder: " + minShoulder.toFixed(2)
     } else {
         calibrationDebugDiv.innerText = "Error: calibrateShoulder received invalid argument: " + which
     }
@@ -77,7 +77,7 @@ function distanceFromFront() {
     let range = maxShoulder - minShoulder
     let ratio = (w - minShoulder) / range
 
-    calibrationDebugDiv.innerText = "distanceFromFront: " + ratio*100.0
+    calibrationDebugDiv.innerText = "distanceFromFront: " + (ratio*100.0).toFixed(2)
     return ratio
 }
 
