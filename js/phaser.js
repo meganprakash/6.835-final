@@ -47,7 +47,7 @@ window.onload = function () {
             width: gameWidth,
             height: gameHeight
         },
-        scene: [Loading, Intro_1, Calibration1, Calibration2, GameIntro]
+        scene: [Loading, Intro_1, Calibration1, Calibration2, GameIntro, GamePlay, EndGame]
     }
     game = new Phaser.Game(gameConfig);
 }
@@ -225,6 +225,7 @@ class Calibration1 extends Phaser.Scene {
 
     preload() {
 
+        this.load.audio('boop', 'assets/boop.wav')
         console.log("preload Calibration1")
         let instructions = this.add.text(gameWidth / 2, gameHeight/2 - 50, "Let's calibrate the game. \n Stand 3 feet in front of your computer.",
             instructionsStyle).setOrigin(0.5)
@@ -253,6 +254,11 @@ class Calibration1 extends Phaser.Scene {
 
     // Listen for new pose and new sound events. update() checks if conditions met
     create() {
+
+        this.boop = this.sound.add('boop', {
+            mute: false
+        });
+        this.boop.setVolume(0.5)
 
         minVol = 20
         maxVol = 70
@@ -289,6 +295,7 @@ class Calibration1 extends Phaser.Scene {
         }
 
         if (!this.calibratingSound && !this.calibratingPose && this.waitingPos <= 0) {
+            this.boop.play()
             this.scene.start("Calibration2")
         }
 
@@ -314,6 +321,8 @@ class Calibration2 extends Phaser.Scene {
     }
 
     preload() {
+
+        this.load.audio('boop', 'assets/boop.wav')
         let instructions = this.add.text(gameWidth / 2, gameHeight/2 - 50, "Awesome! Now, please take 3 steps back.",
             instructionsStyle).setOrigin(0.5)
 
@@ -337,6 +346,10 @@ class Calibration2 extends Phaser.Scene {
     }
 
     create() {
+        this.boop = this.sound.add('boop', {
+            mute: false
+        });
+        this.boop.setVolume(0.5)
         document.addEventListener("newPose", this.newPoseCallback)
     }
 
@@ -346,6 +359,7 @@ class Calibration2 extends Phaser.Scene {
             calibrateShoulderDepth(this.widthHistory, "far")
             document.removeEventListener("newPose", this.newPoseCallback)
             this.calibratingPose = false
+            this.boop.play()
             this.scene.start("GameIntro")
         }
     }
@@ -364,6 +378,12 @@ class GameIntro extends Phaser.Scene {
 
     preload() {
 
+        this.load.audio('boop', 'assets/boop.wav')
+
+        this.boop = this.sound.add('boop', {
+            mute: false
+        });
+        this.boop.setVolume(0.5)
         let instructions = this.add.text(gameWidth / 2, gameHeight/2 - 100, "Hey, it's you! It's time to walk and talk. When the targets" +
             " appear, match your cursor to the target and say the prompt word.",
             instructionsStyle).setOrigin(0.5)
@@ -376,7 +396,8 @@ class GameIntro extends Phaser.Scene {
             const commands = {
                 "I'm ready to play": function () {
                     annyang.abort()
-                    // TODO start game scene
+                    this.boop.play()
+                    this.scene.start("GamePlay")
                 }.bind(this)
             }
             annyang.addCommands(commands);
@@ -411,7 +432,7 @@ class GamePlay extends Phaser.Scene {
         // cursor vals
         this.x = 0;
         this.y = 0;
-        this.vol = 0;
+        this.v = 0;
         this.cursorSize = 30 // px
 
         this.xc = 0;
@@ -419,11 +440,22 @@ class GamePlay extends Phaser.Scene {
         this.vc = 0;
         this.word = "hello";
 
+        this.score = 0
+
         this.posChallenge = false;
         this.volChallenge = false;
+
+        this.initialTime = 60;
+        this.timerText = this.add.text(32, 32, 'Countdown: ' + formatTime(this.initialTime));
     }
 
     preload() {
+        this.load.audio('boop', 'assets/boop.wav')
+
+        this.boop = this.sound.add('boop', {
+            mute: false
+        });
+        this.boop.setVolume(0.5)
 
         let instructions = this.add.text(gameWidth / 2, gameHeight - 100, "Match your cursor to the targets and say " +
             " the prompt word.",
@@ -431,6 +463,13 @@ class GamePlay extends Phaser.Scene {
     }
 
     create() {
+        // timer
+
+        // Each 1000 ms call onEvent
+        this.timedEvent = this.time.addEvent(
+            { delay: 1000, callback: onTick, callbackScope: this});
+
+
         // create ya cursor
         this.volCursor = this.add.circle(gameWidth/2, gameHeight/2, this.cursorSize, 0xefc53f);
         this.posCursor = this.add.circle(gameWidth/2, gameHeight/2, this.cursorSize, 0x6666ff);
@@ -450,14 +489,11 @@ class GamePlay extends Phaser.Scene {
         this.y = cursorVals[1]
         this.v = cursorVals[2]
         console.log("cursorVals: " + JSON.stringify(cursorVals))
-        this.volCursor.setPosition(cursorVals[0], cursorVals[1])
-        this.volCursor.setScale(cursorVals[2]+1)
-        this.posCursor.setPosition(cursorVals[0], cursorVals[1])
+        this.volCursor.setPosition(this.x, this.y)
+        this.volCursor.setScale(this.v+1)
+        this.posCursor.setPosition(this.x, this.y)
 
-
-
-
-        // need a new challenge?
+        checkChallenge() // draws if we need a new one
     }
 
     drawChallenge() {
@@ -471,6 +507,7 @@ class GamePlay extends Phaser.Scene {
         this.posTarget.setPosition(this.xc, this.yc)
         this.volTarget.setPosition(this.xc, this.yc)
         this.volTarget.setScale(vc+1)
+        this.posTarget.alpha = 1
     }
 
     checkChallenge() {
@@ -478,5 +515,72 @@ class GamePlay extends Phaser.Scene {
             this.posChallenge = false
             this.posTarget.alpha = 0
         }
+
+        if(this.posChallenge === false) {
+            this.volTarget.setPosition(this.x, this.y)
+
+            if(Math.abs(this.vc - this.v) < 0.1) {
+                this.vc = Infinity
+                this.volChallenge = false
+                this.score += 1
+                this.boop.play()
+                drawChallenge()
+
+            }
+        }
     }
+
+     formatTime(seconds){
+        // Minutes
+        var minutes = Math.floor(seconds/60);
+        // Seconds
+        var partInSeconds = seconds%60;
+        // Adds left zeros to seconds
+        partInSeconds = partInSeconds.toString().padStart(2,'0');
+        // Returns formated time
+        return `${minutes}:${partInSeconds}`;
+    }
+
+
+     onTick()
+    {
+        this.initialTime -= 1; // One second
+        this.timerText.setText('Score: ' + score + '\n Countdown: ' + formatTime(this.initialTime));
+        if (this.initialTime <= 0) {
+           this.scene.start("EndGame")
+        }
+    }
+}
+
+class EndGame extends Phaser.Scene {
+    constructor() {
+        super("EndGame");
+    }
+
+    preload() {
+        this.load.image('flares', 'assets/flares.png');
+        this.load.audio('ambient', 'assets/applause.wav')
+
+    }
+
+    create() {
+        this.music = this.sound.add('ambient', {
+            loop: true,
+            mute: false
+        });
+        this.music.setVolume(0.05)
+        this.music.play();
+
+        var instructions = this.add.text(gameWidth / 2, gameHeight / 2 + 50,
+            "Speaking up isn't easy, but you did it", instructionsStyle
+        ).setOrigin(0.5)
+
+        var prompt = this.add.text(gameWidth / 2, gameHeight - 100,
+            this.score + " times. \n Great work!",
+            speakStyle
+        ).setOrigin(0.5)
+    }
+    update(time, delta) {
+    }
+
 }

@@ -204,6 +204,7 @@ Write the debug data to the page.
  */
 function updatePoseDebug() {
     if (gameRunning) { return; }
+    if(!leftShoulder_smoothed || !distanceBetweenShoulders) {return;}
     let str =
         "leftShoulder x: " + leftShoulder_smoothed.toFixed(2) + "<br>" +
         "distanceBetweenShoulders: " + distanceBetweenShoulders.toFixed(2) + "<br>"
