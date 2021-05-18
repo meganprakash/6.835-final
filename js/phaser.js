@@ -4,7 +4,9 @@ phaser.js controls the main game scenes
 
  */
 
-const textStr = "Once upon a midnight dreary while I pondered weak and weary over many a quaint and curious volume of forgotten lore while I nodded nearly napping suddenly there came a tapping"
+const textStr = "Once upon a midnight dreary while I pondered weak and weary " +
+    "over many a quaint and curious volume of forgotten lore while I nodded nearly " +
+    "napping suddenly there came a tapping as of someone gently rapping at my chamber door"
 const textArr = textStr.split(" ");
 
 let game;
@@ -24,19 +26,26 @@ const textStyle = {
 
 const instructionsStyle = {
     fontFamily: "'Mono-Regular', 'Courier'",
-    fontSize: '28px',
+    fontSize: '35px',
     color: 'white',
     align: 'center',
-    wordWrap: {width: gameWidth - 300, useAdvancedWrap: true}
+    wordWrap: {width: gameWidth - 250}
 }
 
 
 const speakStyle = {
-    fontFamily: "'Mono-Medium', 'Courier'",
-    fontSize: '32px',
+    fontFamily: "'Mono-Bold', 'Courier'",
+    fontSize: '40px',
     color: 'yellow',
     align: 'center',
-    wordWrap: {width: gameWidth - 300, useAdvancedWrap: true}
+    wordWrap: {width: gameWidth - 150, useAdvancedWrap: true}
+}
+
+const titleStyle = {
+    fontFamily: "'Bubble3D'",
+    fontSize: '70px',
+    color: 'yellow',
+    align: 'center'
 }
 
 window.onload = function () {
@@ -111,11 +120,6 @@ class Intro_1 extends Phaser.Scene {
         this.load.image('flares', 'assets/flares.png');
         this.load.audio('ambient', 'assets/crowd-ambient.wav')
 
-        $(document).on('click', function clicked() {
-            $(document).off("click")
-            this.scene.start("Calibration1")
-        }.bind(this));
-
     }
 
     create() {
@@ -124,7 +128,7 @@ class Intro_1 extends Phaser.Scene {
             loop: true,
             mute: false
         });
-        this.music.setVolume(0.05)
+        this.music.setVolume(0.2)
         this.music.play();
 
         if (annyang) {
@@ -179,9 +183,9 @@ class Intro_1 extends Phaser.Scene {
             emitZone: {type: 'random', source: titleSource}
         });
 
-        var instructions = this.add.text(gameWidth / 2, gameHeight / 2 + 50,
+        var instructions = this.add.text(gameWidth / 2, gameHeight / 2 + 60,
             "Confident public speaking requires trusting yourself to speak " +
-            "up and own the room. \n This game lets you train your instincts for both. \n - \n Can you be heard above the crowd?",
+            "up and own the room.\nThis game lets you train your instincts for both.\nCan you be heard above the crowd?",
             instructionsStyle
         ).setOrigin(0.5)
 
@@ -473,7 +477,7 @@ class GamePlay extends Phaser.Scene {
         this.timerText.setText("Time: " + (60 - this.ticks) + " | Score: " + this.score)
         this.timerText.alpha = 1
         if (this.ticks >= 60) {
-            this.scene.start("EndGame")
+            this.scene.start("EndGame", {score: this.score})
         }
     }
 
@@ -517,7 +521,7 @@ class GamePlay extends Phaser.Scene {
     drawChallenge() {
         this.xc = Math.min(Math.random() * (gameWidth-200) + 100)
         this.yc = Math.random() * (gameHeight-160) + 80
-        this.vc = Math.max(0.5, Math.random())
+        this.vc = Math.random()/2.0 + 0.4
 
         this.posChallenge = true
         this.volChallenge = true
@@ -563,25 +567,25 @@ class EndGame extends Phaser.Scene {
 
     preload() {
         this.load.image('flares', 'assets/flares.png');
-        this.load.audio('ambient', 'assets/applause.wav')
+        this.load.audio('crowd', 'assets/applause.wav')
 
     }
 
-    create() {
-        this.music = this.sound.add('ambient', {
+    create(data) {
+        this.music = this.sound.add('crowd', {
             loop: true,
             mute: false
         });
-        this.music.setVolume(0.05)
+        this.music.setVolume(0.2)
         this.music.play();
 
-        var instructions = this.add.text(gameWidth / 2, gameHeight / 2 + 50,
+        var instructions = this.add.text(gameWidth / 2, gameHeight / 2 - 100,
             "Speaking up isn't easy, but you did it", instructionsStyle
         ).setOrigin(0.5)
 
-        var prompt = this.add.text(gameWidth / 2, gameHeight - 100,
-            this.score + " times. \n Great work!",
-            speakStyle
+        var prompt = this.add.text(gameWidth / 2, gameHeight / 2 + 100,
+            data.score + " times.\nGreat work!",
+            titleStyle
         ).setOrigin(0.5)
 
         var particles = this.add.particles('flares');
@@ -591,10 +595,10 @@ class EndGame extends Phaser.Scene {
             y: gameHeight,
             angle: { min: 180, max: 360 },
             speed: 400,
-            gravityY: 350,
-            lifespan: 4000,
-            quantity: 6,
-            scale: { start: 0.1, end: 1 },
+            gravityY: 100,
+            lifespan: 3000,
+            quantity: 3,
+            scale: { start: 0.01, end: 0.25 },
             blendMode: 'ADD'
         });
     }
