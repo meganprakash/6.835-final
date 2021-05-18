@@ -47,7 +47,7 @@ window.onload = function () {
             width: gameWidth,
             height: gameHeight
         },
-        scene: [Loading, Intro_1, Calibration1, Calibration2]
+        scene: [Loading, Intro_1, Calibration1, Calibration2, GameIntro]
     }
     game = new Phaser.Game(gameConfig);
 }
@@ -58,6 +58,7 @@ Loading scene
 class Loading extends Phaser.Scene {
     constructor() {
         super("Loading");
+        this.poseNetReady = false;
     }
 
     preload() {
@@ -65,15 +66,17 @@ class Loading extends Phaser.Scene {
     }
 
     create() {
-        let loadingText = this.add.text(gameWidth / 2, gameHeight / 2, "Loading", {fontSize: '32px', fill: '#FFF'});
-        loadingText.setOrigin(0.5, 0.5)
-        $(document).on('poseNetReady', function () {
-            console.log("received poseNetReady")
-            loadingText.setText('Turn your sound on \n Click anywhere to begin ...')
+        this.loadingText = this.add.text(gameWidth / 2, gameHeight / 2, "Loading", {fontSize: '32px', fill: '#FFF'});
+        this.loadingText.setOrigin(0.5, 0.5)
 
-            $(document).on('click', function () {
+        $(document).on('poseNetReady', function ready() {
+            console.log("received poseNetReady")
+            $(document).off('poseNetReady')
+            this.loadingText.setText('Turn your sound on \n Click anywhere to begin ...')
+
+            $(document).on('click', function clicked() {
+                $(document).off("click")
                 this.scene.start("Intro_1")
-                $(document).removeEventListener('click')
             }.bind(this));
 
         }.bind(this));
@@ -100,31 +103,37 @@ class Intro_1 extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image('ball', 'assets/ball.png');
-        this.group = this.add.group({key: 'ball'});
         this.load.image('title', 'assets/title.png');
         this.load.image('flares', 'assets/flares.png');
         this.load.audio('ambient', 'assets/crowd-ambient.wav')
 
-        this.music = this.sound.add('ambient', {
-            volume: 0.3,
-            loop: true,
-            mute: false
-        });
-        this.music.play();
+        $(document).on('click', function clicked() {
+            $(document).off("click")
+            this.scene.start("Calibration1")
+        }.bind(this));
 
     }
 
     create() {
 
+        this.music = this.sound.add('ambient', {
+            loop: true,
+            mute: false
+        });
+        this.music.setVolume(0.05)
+        this.music.play();
+
         if (annyang) {
             console.log("annyang voice recognition enabled")
             // Let's define a command.
             const commands = {
-                "game": function () {
+                "start the game": function () {
+                    this.music.stop()
                     annyang.abort()
-                    this.music.stopAll()
-                    this.scene.start("Calibrate1")
+                    annyang.getSpeechRecognizer().abort()
+                    initMic()
+
+                    this.scene.start("Calibration1")
                 }.bind(this)
             }
 
@@ -134,12 +143,6 @@ class Intro_1 extends Phaser.Scene {
         } else {
             console.log("annyang voice recognition not loaded!!")
         }
-
-        this.input.on('pointermove', function (pointer) {
-            this.x = pointer.x;
-            this.y = pointer.y;
-        }, this);
-
 
         var textures = this.textures;
         let title = this.add.image(gameWidth / 2, gameHeight / 2 - 200, 'title');
@@ -174,7 +177,7 @@ class Intro_1 extends Phaser.Scene {
 
         var instructions = this.add.text(gameWidth / 2, gameHeight / 2 + 50,
             "Confident public speaking requires trusting yourself to speak " +
-            "up and own the room. \n This game lets you train your instincts for both. \n \n Can you be heard above the crowd?",
+            "up and own the room. \n This game lets you train your instincts for both. \n - \n Can you be heard above the crowd?",
             instructionsStyle
         ).setOrigin(0.5)
 
@@ -185,7 +188,6 @@ class Intro_1 extends Phaser.Scene {
     }
 
     update(time, delta) {
-        Phaser.Actions.ShiftPosition(this.group.getChildren(), this.x, this.y);
     }
 
 }
@@ -199,15 +201,17 @@ class Calibration1 extends Phaser.Scene {
         super("Calibration1");
         this.calibratingPose = false
         this.calibratingSound = false
+        this.calibrationDone = false
         this.widthHistory = []
         this.startTime = new Date()
-        this.waitTime = 2500 // waiting for user to speak more
+        this.waitTime = 3 // waiting for user to speak more
         this.waitingPos = 30
 
         this.newPoseCallback = () => {
-            if (this.calibratingPose && distanceBetweenShoulders) {
+            if (this.calibratingPose && distanceBetweenShoulders && waitingPos >= 0) {
                 this.waitingPos -= 1
                 this.widthHistory.push(distanceBetweenShoulders)
+                console.log("len widthHistory near: " + this.widthHistory.length)
             }
         }
 
@@ -216,42 +220,43 @@ class Calibration1 extends Phaser.Scene {
             if(e.detail.vol > maxVol) { maxVol = e.detail.vol }
             if(e.detail.vol < minVol) { minVol = e.detail.vol }
         }
+
     }
 
     preload() {
-        console.log("preload Calibration1")
-        let instructions = this.add.text(gameWidth / 2, 50, "Let's calibrate the game. \n Stand 3 feet in front of your computer.",
-            instructionsStyle)
-        const y = instructions.getBottom()
 
-        let prompt = this.add.text(gameWidth / 2, y + 40, "Say 'Hi, my name is [your name]. Nice to meet you!" +
-            "in your normal speaking voice.", speakStyle)
+        console.log("preload Calibration1")
+        let instructions = this.add.text(gameWidth / 2, gameHeight/2 - 50, "Let's calibrate the game. \n Stand 3 feet in front of your computer.",
+            instructionsStyle).setOrigin(0.5)
+
+        let prompt = this.add.text(gameWidth / 2, gameHeight - 150, "Say 'Hi, my name is [your name],' " +
+            " in your normal speaking voice.", speakStyle).setOrigin(0.5)
 
         if (annyang) {
             console.log("annyang voice recognition enabled")
             const commands = {
-                "my name is": function () {
-                    alert("my name is")
+                "hi my name is :name": function () {
                     annyang.abort()
-                    initMic()
-                    this.calibratingSound = true
+                    console.log("Hi!")
+                    // this.calibratingSound = true
                     this.calibratingPose = true
                 }.bind(this)
             }
-
             annyang.addCommands(commands);
             annyang.start();
         } else {
             console.log("annyang voice recognition not loaded!!")
         }
+
+
     }
 
     // Listen for new pose and new sound events. update() checks if conditions met
     create() {
-        annyang.trigger("my name is")
 
-        minVol = Infinity
-        maxVol = -Infinity
+        minVol = 20
+        maxVol = 70
+        micVol_positive = 30
         this.startTime = new Date()
 
         document.addEventListener("newPose", this.newPoseCallback)
@@ -260,27 +265,30 @@ class Calibration1 extends Phaser.Scene {
 
 
     update(time, delta) {
+
+        updateMicDebug()
         // check if voice countdown done
         if (this.calibratingSound) {
             let currentTime = new Date()
-            let diff = (this.startTime - currentTime) / 1000
+            let diff = (currentTime - this.startTime) / 1000
+            console.log("diff: " + diff)
             if (diff >= this.waitTime) {
                 console.log("calibrateVoice: setting volume threshold after waiting")
                 micHistory = []
                 waitingMic = 0
                 this.calibratingSound = false
-                updateMicDebug()
                 document.removeEventListener("newSound", this.newSoundCallback)
             }
         }
         if (this.calibratingPose && this.waitingPos <= 0) {
             console.log("setting near distance")
-            calibrateShoulderDepth(widthHistory, "near")
+            calibrateShoulderDepth(this.widthHistory, "near")
             document.removeEventListener("newPose", this.newPoseCallback)
             this.calibratingPose = false
+            this.calibrationDone = true
         }
 
-        if (!this.calibratingSound && !this.calibratingPose) {
+        if (!this.calibratingSound && !this.calibratingPose && this.waitingPos <= 0) {
             this.scene.start("Calibration2")
         }
 
@@ -297,7 +305,7 @@ class Calibration2 extends Phaser.Scene {
         this.calibratingPose = false
 
         this.newPoseCallback = () => {
-            if (this.calibratingPose && distanceBetweenShoulders) {
+            if (this.calibratingPose && distanceBetweenShoulders && this.waitingPos >= 0) {
                 this.waitingPos -= 1
                 console.log("far calibration waitingPos = " + this.waitingPos)
                 this.widthHistory.push(distanceBetweenShoulders)
@@ -306,18 +314,17 @@ class Calibration2 extends Phaser.Scene {
     }
 
     preload() {
-        let instructions = this.add.text(gameWidth / 2, 50, "Awesome! Now, please take 3 steps back.",
-            instructionsStyle)
-        const y = instructions.getBottom()
+        let instructions = this.add.text(gameWidth / 2, gameHeight/2 - 50, "Awesome! Now, please take 3 steps back.",
+            instructionsStyle).setOrigin(0.5)
 
-        let prompt = this.add.text(gameWidth / 2, y + 40, "Say 'Hey! I'm over here!'", speakStyle)
+        let prompt = this.add.text(gameWidth / 2, gameHeight-100,
+            "Say 'Hey! I'm over here!'", speakStyle).setOrigin(0.5)
 
 
         if (annyang) {
             console.log("annyang voice recognition enabled")
             const commands = {
-                "over": function () {
-                    alert("over")
+                "hey I'm over here": function () {
                     annyang.abort()
                     this.calibratingPose = true
                 }.bind(this)
@@ -330,14 +337,13 @@ class Calibration2 extends Phaser.Scene {
     }
 
     create() {
-        annyang.trigger("over")
         document.addEventListener("newPose", this.newPoseCallback)
     }
 
     update() {
         if (this.calibratingPose && this.waitingPos <= 0) {
             console.log("setting far distance")
-            calibrateShoulderDepth(widthHistory, "far")
+            calibrateShoulderDepth(this.widthHistory, "far")
             document.removeEventListener("newPose", this.newPoseCallback)
             this.calibratingPose = false
             this.scene.start("GameIntro")
@@ -345,43 +351,31 @@ class Calibration2 extends Phaser.Scene {
     }
 }
 
+// Draw cursor demo. The vals are global in poses.js and are retrieved by methods in gameplay.js
 class GameIntro extends Phaser.Scene {
     constructor() {
         super("GameIntro");
-        endCalibration()
-
         // cursor vals
         this.x = 0;
         this.y = 0;
         this.vol = 0;
-        this.cursorSize = 45 // px
-
-        this.newPoseCallback = () => {
-            // change this.x and this.y
-        }
-        this.newSoundCallback = () => {
-            // change this.vol
-        }
+        this.cursorSize = 30 // px
     }
 
     preload() {
-        document.addEventListener("newPose", this.newPoseCallback)
-        document.addEventListener("newSound", this.newSoundCallback)
 
-        let instructions = this.add.text(gameWidth / 2, 50, "Hey, it's you! It's time to walk and talk. When the targets" +
-            "appear, match your cursor to the target and say the prompt word.",
-            instructionsStyle)
-        const y = instructions.getBottom()
+        let instructions = this.add.text(gameWidth / 2, gameHeight/2 - 100, "Hey, it's you! It's time to walk and talk. When the targets" +
+            " appear, match your cursor to the target and say the prompt word.",
+            instructionsStyle).setOrigin(0.5)
 
-        let prompt = this.add.text(gameWidth / 2, y + 40, "Say 'I'm ready to play!' to begin.", speakStyle)
+        let prompt = this.add.text(gameWidth / 2, gameHeight-100,
+            "Say 'I'm ready to play!' to begin.", speakStyle).setOrigin(0.5)
 
         if (annyang) {
             console.log("annyang voice recognition enabled")
             const commands = {
-                "ready": function () {
-                    alert("ready")
+                "I'm ready to play": function () {
                     annyang.abort()
-                    initMic()
                     // TODO start game scene
                 }.bind(this)
             }
@@ -393,6 +387,7 @@ class GameIntro extends Phaser.Scene {
     }
 
     create() {
+
         // create ya cursor
         this.volCursor = this.add.circle(gameWidth/2, gameHeight/2, this.cursorSize, 0xefc53f);
         this.posCursor = this.add.circle(gameWidth/2, gameHeight/2, this.cursorSize, 0x6666ff);
@@ -401,9 +396,87 @@ class GameIntro extends Phaser.Scene {
 
     update() {
         // draw ya cursor
+        const cursorVals = getCursorVals()
+        console.log("cursorVals: " + JSON.stringify(cursorVals))
+        this.volCursor.setPosition(cursorVals[0], cursorVals[1])
+        this.volCursor.setScale(cursorVals[2]+1)
+        this.posCursor.setPosition(cursorVals[0], cursorVals[1])
+    }
+}
 
+// Draw cursor demo. The vals are global in poses.js and are retrieved by methods in gameplay.js
+class GamePlay extends Phaser.Scene {
+    constructor() {
+        super("GamePlay");
+        // cursor vals
+        this.x = 0;
+        this.y = 0;
+        this.vol = 0;
+        this.cursorSize = 30 // px
 
+        this.xc = 0;
+        this.yc = 0;
+        this.vc = 0;
+        this.word = "hello";
+
+        this.posChallenge = false;
+        this.volChallenge = false;
     }
 
+    preload() {
 
+        let instructions = this.add.text(gameWidth / 2, gameHeight - 100, "Match your cursor to the targets and say " +
+            " the prompt word.",
+            instructionsStyle).setOrigin(0.5)
+    }
+
+    create() {
+        // create ya cursor
+        this.volCursor = this.add.circle(gameWidth/2, gameHeight/2, this.cursorSize, 0xefc53f);
+        this.posCursor = this.add.circle(gameWidth/2, gameHeight/2, this.cursorSize, 0x6666ff);
+
+        this.posTarget = this.add.circle(600, 200, this.cursorSize*1.25);
+        this.posTarget.setStrokeStyle(2, 0x1a65ac);
+        this.volTarget = this.add.circle(600, 200, this.cursorSize);
+        this.volTarget.setStrokeStyle(2, 0x1a65ac);
+
+        this.textc = this.add.text(gameWidth / 2, gameHeight / 2, "wordifer", speakStyle).setOrigin(0.5, 1)
+    }
+
+    update() {
+        // draw ya cursor
+        const cursorVals = getCursorVals()
+        this.x = cursorVals[0]
+        this.y = cursorVals[1]
+        this.v = cursorVals[2]
+        console.log("cursorVals: " + JSON.stringify(cursorVals))
+        this.volCursor.setPosition(cursorVals[0], cursorVals[1])
+        this.volCursor.setScale(cursorVals[2]+1)
+        this.posCursor.setPosition(cursorVals[0], cursorVals[1])
+
+
+
+
+        // need a new challenge?
+    }
+
+    drawChallenge() {
+        this.xc = Math.min(Math.random() * (gameWidth-200) + 200)
+        this.yc = Math.random() * (gameHeight-160) + 80
+        this.vc = Math.max(0.5, Math.random())
+        this.word = "hello"
+
+        this.posChallenge = true
+        this.volChallenge = true
+        this.posTarget.setPosition(this.xc, this.yc)
+        this.volTarget.setPosition(this.xc, this.yc)
+        this.volTarget.setScale(vc+1)
+    }
+
+    checkChallenge() {
+        if (Math.abs(this.xc - this.x) < 50 && Math.abs(this.yc - this.y) < 50) {
+            this.posChallenge = false
+            this.posTarget.alpha = 0
+        }
+    }
 }

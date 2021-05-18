@@ -26,7 +26,6 @@ let calibrationDebugDiv = document.getElementById("calibrationDebug")
 
 var gmean = function (array) {
    let n = array.length
-
     console.assert(n > 0)
    let product = array.reduce((a, b) => a * b)
     return Math.pow(product, 1/n)

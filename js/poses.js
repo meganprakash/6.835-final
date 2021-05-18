@@ -25,7 +25,7 @@ let ac,
     buffer,
     scriptProcessorNode
 
-let micVolSmoothing = 20,
+let micVolSmoothing = 5,
     savedVol = [],
     micVol_smoothed,
     micVol_positive
@@ -73,8 +73,6 @@ function setup() {
     video.hide();
 
     // showInstruction("Click to begin!")
-
-    setup_game()
 }
 
 function initMic() {
@@ -187,14 +185,16 @@ function setPoseListeners() {
             }
             rightShoulder_smoothed = gmean(savedRightShoulders)
         }
-        distanceBetweenShoulders = Math.abs(rightShoulder_smoothed - leftShoulder_smoothed)
-        poseReady = true // we have keypoints to proceed
-        updatePoseDebug()
-        let e = new CustomEvent("newPose", {
-            bubbles: true
-        });
-        vid_d.dispatchEvent(e)
 
+        if (rightShoulder_smoothed && leftShoulder_smoothed) {
+            distanceBetweenShoulders = Math.abs(rightShoulder_smoothed - leftShoulder_smoothed)
+        }
+            poseReady = true // we have keypoints to proceed
+            updatePoseDebug()
+            let e = new CustomEvent("newPose", {
+                bubbles: true
+            });
+            vid_d.dispatchEvent(e)
 
     });
 }

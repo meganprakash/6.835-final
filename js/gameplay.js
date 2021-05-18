@@ -22,11 +22,11 @@ let canvas,
     canvasWidth = 900,
     canvasHeight = 800
 
-let micRatio = 0,
-    posX = 0,
-    posY = 0
+let micRatio = 0
+    // posX = 0,
+    // posY = 0
 
-let xPos, yPos, vPos
+// let xPos, yPos, vPos
 
 let challengeVol = Infinity,
     challengeX = Infinity,
@@ -57,6 +57,7 @@ let words = ["amazement","attention","banana", "blindingly", "conference", "elec
 
  initializes fabric_js gameplay space. Called from poses.js setup()
  */
+/*
 function setup_game() {
     // draw board
     canvas = new fabric.Canvas("game", {
@@ -69,7 +70,9 @@ function setup_game() {
 
     document.addEventListener("newSound", setAmbientVol) // wait til there is enough ambient data
 }
+*/
 
+/*
 function setAmbientVol(e) {
     micHistory.push(e.detail.vol)
     if (micHistory.length > 100) {
@@ -78,9 +81,9 @@ function setAmbientVol(e) {
         micHistory = []
         updateMicDebug()
         document.removeEventListener("newSound", setAmbientVol)
-        calibrationPhaseNear()
     }
 }
+*/
 
 /*
 function calibrationPhaseNear() {
@@ -160,12 +163,16 @@ function calibrationPhaseFar() {
 }
 */
 
+/*
 function endCalibration() {
     document.getElementById("poseDebug").style.display = "none"
     document.getElementById("micDebug").style.display = "none"
     gameIntro()
 }
+*/
 
+
+/*
 function gameIntro() {
     // showInstruction("The cursor onscreen shows your position and volume." +
     //    "<br> To play: walk so your cursor matches the prompt, then speak the given word loudly!" +
@@ -182,7 +189,7 @@ function gameIntro() {
     }
     document.addEventListener("newSound", startCall)
 }
-
+*/
 
 
 function gamePhase() {
@@ -224,17 +231,24 @@ function gamePhase() {
 //     document.getElementById("instructions").innerHTML = s
 // }
 
-function getCursorPos() {
+function getCursorVals() {
     let xPos = Math.max(0, gameWidth - distanceFromLeft() * gameWidth)
     let yPos = Math.max(0, gameHeight - distanceFromFront() * gameHeight)
-    vPos = getVolPct()
+    let vPct = getVolPct()
     xPos = xPos > gameWidth ? gameWidth : xPos
     yPos = yPos > gameHeight ? gameHeight : yPos
 
-    return [xPos, yPos]
+    // also show gameplay debug
+    let str = "distanceFromFront: " + distanceFromFront().toFixed(2) + "<br>"
+        + "distanceFromLeft: " + distanceFromLeft().toFixed(2) + "<br>"
+        + "vol pct" + getVolPct().toFixed(2)
+
+    document.getElementById("calibrationDebug").innerHTML = str
+
+    return [xPos, yPos, vPct]
 }
 
-
+/*
 function drawCursor() {
     xPos = Math.max(0, canvasWidth - distanceFromLeft() * canvasWidth)
     yPos = Math.max(0, canvasHeight - distanceFromFront() * canvasHeight)
@@ -257,6 +271,7 @@ function drawCursor() {
     document.getElementById("calibrationDebug").innerHTML = str
 
 }
+ */
 
 function drawChallenge() {
     if (score === 15) {endGame()}
