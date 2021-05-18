@@ -25,7 +25,7 @@ let ac,
     buffer,
     scriptProcessorNode
 
-let micVolSmoothing = 5,
+let micVolSmoothing = 3,
     savedVol = [],
     micVol_smoothed,
     micVol_positive
@@ -46,6 +46,7 @@ let poseSmoothing = 10, // how many poses to keep
     savedRightShoulders = [],
     rightShoulder_smoothed,
     distanceBetweenShoulders;
+
 
 let moveThreshold = 100,
     leftMoveRequest = null,
@@ -166,10 +167,21 @@ function setPoseListeners() {
         let pose = results[0].pose
         if(pose.score < 0.05) { return; }
 
+        let nose, right, left = false
+        // check if nose confidence is high enough
+        if (pose.keypoints[0].score > 0.5) {
+            nose = true
+            savedRightShoulders.push(pose.keypoints[6].position.x)
+            if (savedRightShoulders.length > poseSmoothing) {
+                savedRightShoulders.shift()
+            }
+            rightShoulder_smoothed = gmean(savedRightShoulders)
+        }
+
 
         // check if left shoulder confidence is high enough
         if (pose.keypoints[5].score > 0.5) {
-
+            left = true
             savedLeftShoulders.push(pose.keypoints[5].position.x)
             if (savedLeftShoulders.length > poseSmoothing) {
                 savedLeftShoulders.shift()
@@ -179,6 +191,7 @@ function setPoseListeners() {
 
         // check if right shoulder confidence is high enough
         if (pose.keypoints[6].score > 0.5) {
+            right = true
             savedRightShoulders.push(pose.keypoints[6].position.x)
             if (savedRightShoulders.length > poseSmoothing) {
                 savedRightShoulders.shift()
@@ -186,7 +199,7 @@ function setPoseListeners() {
             rightShoulder_smoothed = gmean(savedRightShoulders)
         }
 
-        if (rightShoulder_smoothed && leftShoulder_smoothed) {
+        if (left && right) { // only update depth if both shoulders are visible
             distanceBetweenShoulders = Math.abs(rightShoulder_smoothed - leftShoulder_smoothed)
         }
             poseReady = true // we have keypoints to proceed

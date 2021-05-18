@@ -87,8 +87,8 @@ xPxArray = collection of x-position samples
 function distanceFromLeft() {
     let d = leftShoulder_smoothed
     d = (d > videoWidth) ? (videoWidth) : d
-    d = d < 0 ? 0 : d
-    return d/(videoWidth-100)
+    d = d < 60 ? 60 : d
+    return d/(videoWidth)
 }
 
 function getVolPct() {

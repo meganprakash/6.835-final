@@ -13,7 +13,7 @@ const gameWidth = 1000,
 
 const textStyle = {
     fontFamily: "'Mono-Regular', 'Courier'",
-    fontSize: '14px',
+    fontSize: '18px',
     color: 'white',
     align: 'center',
     originY: 0
@@ -21,7 +21,7 @@ const textStyle = {
 
 const instructionsStyle = {
     fontFamily: "'Mono-Regular', 'Courier'",
-    fontSize: '25px',
+    fontSize: '28px',
     color: 'white',
     align: 'center',
     wordWrap: {width: gameWidth - 300, useAdvancedWrap: true}
@@ -30,7 +30,7 @@ const instructionsStyle = {
 
 const speakStyle = {
     fontFamily: "'Mono-Medium', 'Courier'",
-    fontSize: '25px',
+    fontSize: '32px',
     color: 'yellow',
     align: 'center',
     wordWrap: {width: gameWidth - 300, useAdvancedWrap: true}
@@ -323,7 +323,7 @@ class Calibration2 extends Phaser.Scene {
     preload() {
 
         this.load.audio('boop', 'assets/boop.wav')
-        let instructions = this.add.text(gameWidth / 2, gameHeight/2 - 50, "Awesome! Now, please take 3 steps back.",
+        let instructions = this.add.text(gameWidth / 2, gameHeight/2 - 50, "Awesome! Now, please take 5 steps back.",
             instructionsStyle).setOrigin(0.5)
 
         let prompt = this.add.text(gameWidth / 2, gameHeight-100,
@@ -445,8 +445,6 @@ class GamePlay extends Phaser.Scene {
         this.posChallenge = false;
         this.volChallenge = false;
 
-        this.initialTime = 60;
-        this.timerText = this.add.text(32, 32, 'Countdown: ' + formatTime(this.initialTime));
     }
 
     preload() {
@@ -465,21 +463,24 @@ class GamePlay extends Phaser.Scene {
     create() {
         // timer
 
-        // Each 1000 ms call onEvent
-        this.timedEvent = this.time.addEvent(
-            { delay: 1000, callback: onTick, callbackScope: this});
+        // this.initialTime = 60;
+        // this.timerText = this.add.text(32, 32, 'Countdown: ' + this.formatTime((this.initialTime)));
+        // // Each 1000 ms call onEvent
+        // this.timedEvent = this.time.addEvent(
+        //     { delay: 1000, callback: onTick, callbackScope: this});
 
 
         // create ya cursor
         this.volCursor = this.add.circle(gameWidth/2, gameHeight/2, this.cursorSize, 0xefc53f);
         this.posCursor = this.add.circle(gameWidth/2, gameHeight/2, this.cursorSize, 0x6666ff);
 
-        this.posTarget = this.add.circle(600, 200, this.cursorSize*1.25);
-        this.posTarget.setStrokeStyle(2, 0x1a65ac);
-        this.volTarget = this.add.circle(600, 200, this.cursorSize);
-        this.volTarget.setStrokeStyle(2, 0x1a65ac);
+        this.posTarget = this.add.circle(600, 200, this.cursorSize*3);
+        this.posTarget.setStrokeStyle(4, 0xc496ff);
+        this.volTarget = this.add.circle(600, 200, this.cursorSize*2.5);
+        this.volTarget.setStrokeStyle(4, 0xc6eb34);
 
-        this.textc = this.add.text(gameWidth / 2, gameHeight / 2, "wordifer", speakStyle).setOrigin(0.5, 1)
+        this.textc = this.add.text(gameWidth / 2, gameHeight / 2, "wordifer", speakStyle).setOrigin(1, 0.5)
+        this.textc.alpha = 0
     }
 
     update() {
@@ -488,12 +489,12 @@ class GamePlay extends Phaser.Scene {
         this.x = cursorVals[0]
         this.y = cursorVals[1]
         this.v = cursorVals[2]
-        console.log("cursorVals: " + JSON.stringify(cursorVals))
+        // console.log("cursorVals: " + JSON.stringify(cursorVals))
         this.volCursor.setPosition(this.x, this.y)
         this.volCursor.setScale(this.v+1)
         this.posCursor.setPosition(this.x, this.y)
 
-        checkChallenge() // draws if we need a new one
+        this.checkChallenge() // draws if we need a new one
     }
 
     drawChallenge() {
@@ -501,16 +502,20 @@ class GamePlay extends Phaser.Scene {
         this.yc = Math.random() * (gameHeight-160) + 80
         this.vc = Math.max(0.5, Math.random())
         this.word = "hello"
+        this.textc.setText(this.word)
+        this.textc.setPosition(this.xc+20, this.yc+20)
+        this.textc.alpha = 1
 
         this.posChallenge = true
         this.volChallenge = true
         this.posTarget.setPosition(this.xc, this.yc)
         this.volTarget.setPosition(this.xc, this.yc)
-        this.volTarget.setScale(vc+1)
+        this.volTarget.setScale(this.vc)
         this.posTarget.alpha = 1
     }
 
     checkChallenge() {
+        console.log("diff: " + (this.xc - this.x) + ", " + (this.yc - this.y))
         if (Math.abs(this.xc - this.x) < 50 && Math.abs(this.yc - this.y) < 50) {
             this.posChallenge = false
             this.posTarget.alpha = 0
@@ -524,7 +529,7 @@ class GamePlay extends Phaser.Scene {
                 this.volChallenge = false
                 this.score += 1
                 this.boop.play()
-                drawChallenge()
+                this.drawChallenge()
 
             }
         }
