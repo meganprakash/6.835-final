@@ -427,6 +427,7 @@ class GameIntro extends Phaser.Scene {
 
 // Draw cursor demo. The vals are global in poses.js and are retrieved by methods in gameplay.js
 class GamePlay extends Phaser.Scene {
+
     constructor() {
         super("GamePlay");
         // cursor vals
@@ -441,6 +442,7 @@ class GamePlay extends Phaser.Scene {
         this.word = "hello";
 
         this.score = 0
+        this.ticks = 0
 
         this.posChallenge = false;
         this.volChallenge = false;
@@ -458,18 +460,20 @@ class GamePlay extends Phaser.Scene {
         let instructions = this.add.text(gameWidth / 2, gameHeight - 100, "Match your cursor to the targets and say " +
             " the prompt word.",
             instructionsStyle).setOrigin(0.5)
+        this.timerText = this.add.text(gameWidth / 2, 100, "Timer and score", speakStyle).setOrigin(0.5)
+        this.timerText.alpha = 0
+    }
+
+    clock() {
+        this.ticks++
+        this.timerText.setText("Time: " + (60 - this.ticks) + " | Score: " + this.score)
+        this.timerText.alpha = 1
+        if (this.ticks >= 60) {
+            this.scene.start("EndGame")
+        }
     }
 
     create() {
-        // timer
-
-        // this.initialTime = 60;
-        // this.timerText = this.add.text(32, 32, 'Countdown: ' + this.formatTime((this.initialTime)));
-        // // Each 1000 ms call onEvent
-        // this.timedEvent = this.time.addEvent(
-        //     { delay: 1000, callback: onTick, callbackScope: this});
-
-
         // create ya cursor
         this.volCursor = this.add.circle(gameWidth/2, gameHeight/2, this.cursorSize, 0xefc53f);
         this.posCursor = this.add.circle(gameWidth/2, gameHeight/2, this.cursorSize, 0x6666ff);
@@ -481,9 +485,18 @@ class GamePlay extends Phaser.Scene {
 
         this.textc = this.add.text(gameWidth / 2, gameHeight / 2, "wordifer", speakStyle).setOrigin(1, 0.5)
         this.textc.alpha = 0
+
+        this.timedEvent = this.time.addEvent({ delay: 1000, callback: this.clock, callbackScope: this, loop: true });
     }
 
-    update() {
+    update(time, delta) {
+        // tick
+        this.gameTime += delta;
+        while (this.gameTime > 1000) {
+            this.resources += 1;
+            this.timer -= 1000;
+        }
+
         // draw ya cursor
         const cursorVals = getCursorVals()
         this.x = cursorVals[0]
@@ -501,10 +514,6 @@ class GamePlay extends Phaser.Scene {
         this.xc = Math.min(Math.random() * (gameWidth-200) + 200)
         this.yc = Math.random() * (gameHeight-160) + 80
         this.vc = Math.max(0.5, Math.random())
-        this.word = "hello"
-        this.textc.setText(this.word)
-        this.textc.setPosition(this.xc+20, this.yc+20)
-        this.textc.alpha = 1
 
         this.posChallenge = true
         this.volChallenge = true
@@ -512,6 +521,11 @@ class GamePlay extends Phaser.Scene {
         this.volTarget.setPosition(this.xc, this.yc)
         this.volTarget.setScale(this.vc)
         this.posTarget.alpha = 1
+
+        this.word = "hello"
+        this.textc.setText(this.word)
+        this.textc.setPosition(this.xc+20, this.yc+20)
+        this.textc.alpha = 1
     }
 
     checkChallenge() {
@@ -524,35 +538,15 @@ class GamePlay extends Phaser.Scene {
         if(this.posChallenge === false) {
             this.volTarget.setPosition(this.x, this.y)
 
+            this.textc.setPosition(this.x-30, this.y)
+
             if(Math.abs(this.vc - this.v) < 0.1) {
                 this.vc = Infinity
                 this.volChallenge = false
                 this.score += 1
                 this.boop.play()
                 this.drawChallenge()
-
             }
-        }
-    }
-
-     formatTime(seconds){
-        // Minutes
-        var minutes = Math.floor(seconds/60);
-        // Seconds
-        var partInSeconds = seconds%60;
-        // Adds left zeros to seconds
-        partInSeconds = partInSeconds.toString().padStart(2,'0');
-        // Returns formated time
-        return `${minutes}:${partInSeconds}`;
-    }
-
-
-     onTick()
-    {
-        this.initialTime -= 1; // One second
-        this.timerText.setText('Score: ' + score + '\n Countdown: ' + formatTime(this.initialTime));
-        if (this.initialTime <= 0) {
-           this.scene.start("EndGame")
         }
     }
 }

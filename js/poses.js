@@ -45,7 +45,9 @@ let poseSmoothing = 10, // how many poses to keep
     leftShoulder_smoothed,
     savedRightShoulders = [],
     rightShoulder_smoothed,
-    distanceBetweenShoulders;
+    distanceBetweenShoulders,
+    savedNoses = [],
+    nose_smoothed
 
 
 let moveThreshold = 100,
@@ -171,13 +173,12 @@ function setPoseListeners() {
         // check if nose confidence is high enough
         if (pose.keypoints[0].score > 0.5) {
             nose = true
-            savedRightShoulders.push(pose.keypoints[6].position.x)
-            if (savedRightShoulders.length > poseSmoothing) {
-                savedRightShoulders.shift()
+            savedNoses.push(pose.keypoints[0].position.x)
+            if (savedNoses.length > poseSmoothing) {
+                savedNoses.shift()
             }
-            rightShoulder_smoothed = gmean(savedRightShoulders)
+            nose_smoothed = gmean(savedNoses)
         }
-
 
         // check if left shoulder confidence is high enough
         if (pose.keypoints[5].score > 0.5) {
