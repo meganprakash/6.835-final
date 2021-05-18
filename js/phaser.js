@@ -4,6 +4,9 @@ phaser.js controls the main game scenes
 
  */
 
+const textStr = "Once upon a midnight dreary while I pondered weak and weary over many a quaint and curious volume of forgotten lore while I nodded nearly napping suddenly there came a tapping"
+const textArr = textStr.split(" ");
+
 let game;
 let gameOptions = {
     startingBalls: 5
@@ -63,6 +66,7 @@ class Loading extends Phaser.Scene {
 
     preload() {
         console.log("preloading Loading scene")
+        console.log(JSON.stringify(textArr))
     }
 
     create() {
@@ -511,7 +515,7 @@ class GamePlay extends Phaser.Scene {
     }
 
     drawChallenge() {
-        this.xc = Math.min(Math.random() * (gameWidth-200) + 200)
+        this.xc = Math.min(Math.random() * (gameWidth-200) + 100)
         this.yc = Math.random() * (gameHeight-160) + 80
         this.vc = Math.max(0.5, Math.random())
 
@@ -522,13 +526,14 @@ class GamePlay extends Phaser.Scene {
         this.volTarget.setScale(this.vc)
         this.posTarget.alpha = 1
 
-        this.word = "hello"
+        this.word = textArr[this.score]
         this.textc.setText(this.word)
         this.textc.setPosition(this.xc+20, this.yc+20)
         this.textc.alpha = 1
     }
 
     checkChallenge() {
+        if (!this.posChallenge && !this.volChallenge) { this.drawChallenge() }
         console.log("diff: " + (this.xc - this.x) + ", " + (this.yc - this.y))
         if (Math.abs(this.xc - this.x) < 50 && Math.abs(this.yc - this.y) < 50) {
             this.posChallenge = false
@@ -578,8 +583,24 @@ class EndGame extends Phaser.Scene {
             this.score + " times. \n Great work!",
             speakStyle
         ).setOrigin(0.5)
+
+        var particles = this.add.particles('flares');
+
+        var emitter = particles.createEmitter({
+            x: gameWidth / 2,
+            y: gameHeight,
+            angle: { min: 180, max: 360 },
+            speed: 400,
+            gravityY: 350,
+            lifespan: 4000,
+            quantity: 6,
+            scale: { start: 0.1, end: 1 },
+            blendMode: 'ADD'
+        });
     }
+
     update(time, delta) {
+
     }
 
 }

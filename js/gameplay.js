@@ -272,7 +272,7 @@ function drawCursor() {
 
 }
  */
-
+/*
 function drawChallenge() {
     if (score === 15) {endGame()}
     xCh = Math.min(Math.random() * (canvasWidth - 200) + 100, 300)
@@ -337,5 +337,5 @@ function endGame() {
     // showInstruction("Nice work, your time was " + seconds + " seconds.")
 
 }
-
+*/
 
