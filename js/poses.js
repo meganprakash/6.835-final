@@ -37,6 +37,8 @@ let video,
     poseReady, // a pose has been detected with necessary keypoints
     poses = [];
 
+let widthHistory = [];
+
 // saving only the horizontal coordinates of shoulders
 let poseSmoothing = 10, // how many poses to keep
     savedLeftShoulders = [],
@@ -97,8 +99,12 @@ function initMic() {
 
 }
 
-function destroyMic() {
+function resumeMic() {
+    ac.resume()
+}
 
+function pauseMic() {
+    ac.suspend()
 }
 
 function processAudio() {

@@ -82,33 +82,33 @@ function setAmbientVol(e) {
     }
 }
 
+/*
 function calibrationPhaseNear() {
     // showInstruction("Welcome! This is the calibration phase. Please stand " +
     //  "3 feet away from your computer, and say 'Hi! My name is [your name]'")
 
-    waitingMic = 90
+    waitingMic = 60
     waitingPos = 60
     let widthHistory = []
     let maxMic = -Infinity
+    let minMic = Infinity
     // cursor position at center and mic is 0
 
     let minDistanceCallback = (e) => {
         if (distanceBetweenShoulders) {
-            waitingPos -= 1
-            widthHistory.push(distanceBetweenShoulders)
-            if (waitingPos <= 0) {
-                console.log("setting near distance")
-                calibrateShoulderDepth(widthHistory, "near")
-                widthHistory = []
-                document.removeEventListener("newPose", minDistanceCallback)
-                calibrationPhaseFar()
-            }
+        waitingPos -= 1
+        widthHistory.push(distanceBetweenShoulders)
+        if (waitingPos <= 0) {
+            console.log("setting near distance")
+            calibrateShoulderDepth(widthHistory, "near")
+            widthHistory = []
+            document.removeEventListener("newPose", minDistanceCallback)
         }
-    }
+    }}
 
     let nearCallback = (e) => {
         if (e.detail.vol > maxMic) { maxMic = e.detail.vol}
-        if (e.detail.vol > minVol + 15) { waitingMic -= 1 }
+        if (e.detail.vol < minVol + 15) { waitingMic -= 1 }
         if (waitingMic <= 0) {
             console.log("setting maxVol")
             maxVol = maxMic
@@ -121,13 +121,9 @@ function calibrationPhaseNear() {
     }
     document.addEventListener("newSound", nearCallback)
 
-    // set listener, callback is far
-    // ask for near, say "Hi, my name is"
-    // wait for enough input
-
-
 }
-
+*/
+/*
 function calibrationPhaseFar() {
     // showInstruction("Thanks, that was great! Next, take 3 steps back." +
     //     "Then, say 'I'm ready to start!'")
@@ -162,6 +158,7 @@ function calibrationPhaseFar() {
     document.addEventListener("newSound", farCallback)
 
 }
+*/
 
 function endCalibration() {
     document.getElementById("poseDebug").style.display = "none"
@@ -227,8 +224,19 @@ function gamePhase() {
 //     document.getElementById("instructions").innerHTML = s
 // }
 
+function getCursorPos() {
+    let xPos = Math.max(0, gameWidth - distanceFromLeft() * gameWidth)
+    let yPos = Math.max(0, gameHeight - distanceFromFront() * gameHeight)
+    vPos = getVolPct()
+    xPos = xPos > gameWidth ? gameWidth : xPos
+    yPos = yPos > gameHeight ? gameHeight : yPos
+
+    return [xPos, yPos]
+}
+
+
 function drawCursor() {
-     xPos = Math.max(0, canvasWidth - distanceFromLeft() * canvasWidth)
+    xPos = Math.max(0, canvasWidth - distanceFromLeft() * canvasWidth)
     yPos = Math.max(0, canvasHeight - distanceFromFront() * canvasHeight)
     vPos = getVolPct()
     xPos = xPos > canvasWidth ? canvasWidth : xPos
